@@ -14,33 +14,85 @@ import {
 } from "../models/user.model";
 import { AuthRequest } from "../middlewares/auth.middlewares";
 import db from "../config/db";
+import * as UserModel from "../models/user.model";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const JWT_SECRET = process.env.JWT_SECRET || "clavesecreta";
 const REFRESH_SECRET = process.env.REFRESH_SECRET || "refreshsecreto";
 
-// Registro de usuario
+// Registro con verificación
 export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password, telefono, direccion } = req.body;
 
-    // Validar si ya existe
-    const existingUser = await findUserByEmail(email);
+    const existingUser = await UserModel.findUserByEmail(email);
     if (existingUser) {
       return res.status(400).json({ message: "El correo ya está registrado" });
     }
 
-    // Hashear contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const userId = await createUser({
+    // Generar token de verificación
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+    const userId = await UserModel.createUser({
       name,
       email,
       password: hashedPassword,
       telefono,
       direccion,
+      verification_token: verificationToken,
+      verification_expires: verificationExpires,
     });
 
-    res.status(201).json({ message: "Usuario creado", userId });
+    // Enviar email con el enlace
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const verificationUrl = `http://localhost:3000/api/auth/verify-email?token=${verificationToken}`;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Confirma tu correo",
+      html: `<p>Hola ${name},</p>
+             <p>Por favor confirma tu correo dando clic en el siguiente enlace:</p>
+             <a href="${verificationUrl}">${verificationUrl}</a>`,
+    });
+
+    res.status(201).json({ message: "Usuario creado. Revisa tu correo para confirmar la cuenta." });
+  } catch (error) {
+    res.status(500).json({ message: "Error en el servidor", error });
+  }
+};
+
+// Verificación de correo
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.query;
+
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ message: "Token inválido" });
+    }
+
+    const user = await UserModel.findUserByVerificationToken(token);
+    if (!user) {
+      return res.status(400).json({ message: "Token no válido" });
+    }
+
+    if (user.verification_expires && new Date(user.verification_expires) < new Date()) {
+      return res.status(400).json({ message: "Token expirado" });
+    }
+
+    await UserModel.verifyUser(user.id!);
+    res.json({ message: "Correo verificado correctamente. Ya puedes iniciar sesión." });
   } catch (error) {
     res.status(500).json({ message: "Error en el servidor", error });
   }
@@ -55,7 +107,7 @@ export const login = async (req: Request, res: Response) => {
     const user = await findUserByEmail(email);
     if (!user) return res.status(401).json({ message: "Usuario no encontrado" });
 
-    // Verificar si está bloqueado, edpoint bloqueo
+    // Verificar si está bloqueado, edpoint 
     if (user.locked_until && new Date(user.locked_until) > new Date()) {
       return res.status(403).json({
         message: `Cuenta bloqueada. Intenta de nuevo después de ${user.locked_until}`,

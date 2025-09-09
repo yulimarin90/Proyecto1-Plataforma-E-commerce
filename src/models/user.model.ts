@@ -12,15 +12,51 @@ export interface User {
   created_at?: Date;
   failed_attempts?: number;
   locked_until?: Date | null;
+  is_verified?: boolean;
+  verification_token?: string | null;
+  verification_expires?: Date | null;
 }
 
-// Crear usuario
+// Crear usuario con token de verificación
 export const createUser = async (user: User): Promise<number> => {
   const [result] = await db.query<ResultSetHeader>(
-    "INSERT INTO users (name, email, password, telefono, direccion) VALUES (?, ?, ?, ?, ?)",
-    [user.name, user.email, user.password, user.telefono, user.direccion]
+    `INSERT INTO users (name, email, password, telefono, direccion, 
+       is_verified, verification_token, verification_expires) 
+     VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+    [
+      user.name,
+      user.email,
+      user.password,
+      user.telefono,
+      user.direccion,
+      user.verification_token,
+      user.verification_expires,
+    ]
   );
   return result.insertId;
+};
+
+export const findUserByEmail1 = async (email: string): Promise<User | null> => {
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM users WHERE email = ?",
+    [email]
+  );
+  return rows.length > 0 ? (rows[0] as User) : null;
+};
+
+export const findUserByVerificationToken = async (token: string): Promise<User | null> => {
+  const [rows] = await db.query<RowDataPacket[]>(
+    "SELECT * FROM users WHERE verification_token = ?",
+    [token]
+  );
+  return rows.length > 0 ? (rows[0] as User) : null;
+};
+
+export const verifyUser = async (id: number) => {
+  await db.query(
+    "UPDATE users SET is_verified = 1, verification_token = NULL, verification_expires = NULL WHERE id = ?",
+    [id]
+  );
 };
 
 // Buscar usuario por email
