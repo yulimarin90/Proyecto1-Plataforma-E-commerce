@@ -45,6 +45,13 @@ export const register = async (req: Request, res: Response) => {
       direccion,
       verification_token: verificationToken,
       verification_expires: verificationExpires,
+      
+
+    /*
+      user.created_at,
+      user.failed_attempts,
+      user.locked_until, 
+*/
     });
 
     // Enviar email con el enlace

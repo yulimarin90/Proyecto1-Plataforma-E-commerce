@@ -13,22 +13,25 @@ export interface User {
   failed_attempts?: number;
   locked_until?: Date | null;
   is_verified?: boolean;
-  verification_token?: string | null;
-  verification_expires?: Date | null;
+  verification_token?: string | null; //token de verificacion correo
+  verification_expires?: Date | null; //token de verificacion correo
 }
 
 // Crear usuario con token de verificación
 export const createUser = async (user: User): Promise<number> => {
   const [result] = await db.query<ResultSetHeader>(
-    `INSERT INTO users (name, email, password, telefono, direccion, 
-       is_verified, verification_token, verification_expires) 
-     VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+    `INSERT INTO users (name, email, password, telefono, direccion, created_at, failed_attempts,   
+       locked_until, is_verified, verification_token, verification_expires) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
     [
       user.name,
       user.email,
       user.password,
       user.telefono,
       user.direccion,
+      user.created_at,
+      user.failed_attempts,
+      user.locked_until,
       user.verification_token,
       user.verification_expires,
     ]
