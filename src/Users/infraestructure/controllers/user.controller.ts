@@ -15,7 +15,7 @@ const userService = new UserService(new MySQLUserRepository());
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const result = await userService.register(req.body);
+    const result = await userService.register(req.body); //me trae el metodo de service
     res.status(201).json({ message: "Usuario creado. Revisa tu correo.", ...result });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -26,14 +26,12 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     const result = await userService.login(email, password);
-    res.json(result);
+    res.status(200).json(result);
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    res.status(error.status || 400).json({ message: error.message });
   }
 };
 
-// Rutas protegidas (AUTH)
-// ============================
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
