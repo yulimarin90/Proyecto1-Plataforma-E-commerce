@@ -1,5 +1,5 @@
 import { Product } from "../domain/products.entity";
-import { ProductRepository } from "../infraestructure/repositories/products.repository";
+import { ProductRepository } from "../infraestructure/repositories/products.repository.msql";
 import { v4 as uuid } from "uuid";
 
 export class ProductService {
