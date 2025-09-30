@@ -1,5 +1,3 @@
-//Casos de uso. No sabe nada de Express ni MySQL.
-//los casos deben se transaccionales, todo o nada, o llamado atomico 
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -12,7 +10,11 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET || "refreshsecreto";
 export class UserService {
   constructor(private userRepository: IUserRepository) {}
 
-  //metodo
+  // Constantes de la clase
+  private readonly MAX_FAILED_ATTEMPTS = 3;
+  private readonly LOCK_TIME_MINUTES = 15;
+
+  // Registro
   async register(data: Omit<User, "id">) {
     const existing = await this.userRepository.findByEmail(data.email);
     if (existing) throw new Error("El correo ya está registrado");
@@ -32,34 +34,47 @@ export class UserService {
     return { id, verificationToken };
   }
 
+  // Login
   async login(email: string, password: string) {
     const user = await this.userRepository.findByEmail(email);
-    if (!user) throw new Error("Usuario no encontrado");
-
-    if (user.locked_until && new Date(user.locked_until) > new Date()) {
-      throw new Error(`Cuenta bloqueada hasta ${user.locked_until}`);
+    if (!user) {
+      throw { status: 404, message: "Usuario no encontrado" };
     }
 
+    // Verificar bloqueo
+    if (user.locked_until && new Date(user.locked_until) > new Date()) {
+      throw { status: 429, message: `Cuenta bloqueada hasta ${user.locked_until}` };
+    }
+
+    // Verificar contraseña
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       const failed = (user.failed_attempts || 0) + 1;
       let lockedUntil: Date | null = null;
-      if (failed >= 3) {
-        lockedUntil = new Date(Date.now() + 15 * 60 * 1000);
+
+      if (failed >= this.MAX_FAILED_ATTEMPTS) {
+        lockedUntil = new Date(Date.now() + this.LOCK_TIME_MINUTES * 60 * 1000);
       }
+
       await this.userRepository.update(user.id!, {
         failed_attempts: failed,
         locked_until: lockedUntil,
       });
-      throw new Error(failed >= 3 ? "Cuenta bloqueada" : `Contraseña incorrecta. Intentos: ${failed}/3`);
+
+      if (failed >= this.MAX_FAILED_ATTEMPTS) {
+        throw { status: 429, message: "Cuenta bloqueada por demasiados intentos fallidos" };
+      } else {
+        throw { status: 401, message: `Contraseña incorrecta. Intentos: ${failed}/${this.MAX_FAILED_ATTEMPTS}` };
+      }
     }
 
-    // Reset fallos
+    // Resetear intentos fallidos al loguearse
     await this.userRepository.update(user.id!, {
       failed_attempts: 0,
       locked_until: null,
     });
 
+    // Generar tokens
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "15m" });
     const refreshToken = jwt.sign({ id: user.id, email: user.email }, REFRESH_SECRET, { expiresIn: "7d" });
 
@@ -67,16 +82,29 @@ export class UserService {
 
     return { token, refreshToken };
   }
+  // revisar de aca hacia abajo 
+   async updateAccount(userId: number, data: Partial<User>) {
+  const user = await this.userRepository.findById(userId);
+  if (!user) throw { status: 404, message: "Usuario no encontrado" };
+
+  await this.userRepository.update(userId, data);
+  return { message: "Usuario actualizado parcialmente" };
 }
 
-export const updateAccount = async (userId: string, data: any) => {
-  // lógica para actualizar parcialmente
-};
+async replaceAccount(userId: number, data: Omit<User, "id">) {
+  const user = await this.userRepository.findById(userId);
+  if (!user) throw { status: 404, message: "Usuario no encontrado" };
 
-export const replaceAccount = async (userId: string, data: any) => {
-  // lógica para reemplazar el usuario entero
-};
+  await this.userRepository.replace(userId, data);
+  return { message: "Usuario reemplazado completamente" };
+}
 
-export const deleteAccount = async (userId: string) => {
-  // lógica para eliminar usuario
-};
+async deleteAccount(userId: number) {
+  const user = await this.userRepository.findById(userId);
+  if (!user) throw { status: 404, message: "Usuario no encontrado" };
+
+  await this.userRepository.delete(userId);
+  return { message: "Usuario eliminado correctamente" };
+}
+}
+
