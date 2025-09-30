@@ -1,34 +1,18 @@
-import { Product } from "../../domain/products.entity";
+// models/product.model.ts
+import { Schema, model } from "mongoose";
 
+const productSchema = new Schema(
+  {
+    nombre: { type: String, required: true, unique: true },
+    imagen: { type: String },
+    descripcion: { type: String },
+    precio: { type: Number, required: true },
+    stock: { type: Number, required: true },
+    cantidad: { type: Number, default: 0 },
+    categoria_id: { type: Schema.Types.ObjectId, ref: "Categoria", required: true },
+    estado: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
 
-const products: Product[] = [];
-
-export class ProductRepository {
-  async create(product: Product): Promise<Product> {
-    products.push(product);
-    return product;
-  }
-
-  async findAll(): Promise<Product[]> {
-    return products;
-  }
-
-  async findById(id: string): Promise<Product | undefined> {
-    return products.find(p => p.id === id);
-  }
-
-  async update(id: string, updateData: Partial<Product>): Promise<Product | null> {
-    const index = products.findIndex(p => p.id === id);
-    if (index === -1) return null;
-
-    products[index] = { ...products[index], ...updateData };
-    return products[index];
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const index = products.findIndex(p => p.id === id);
-    if (index === -1) return false;
-    products.splice(index, 1);
-    return true;
-  }
-}
+export const Product = model("Product", productSchema);
