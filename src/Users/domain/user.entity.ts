@@ -4,8 +4,8 @@ export interface User {
   name: string;
   email: string;
   password: string;
-  telefono: number;
-  direccion?: string;
+  phone: number;
+  address: string;
   created_at?: Date;
   failed_attempts?: number;
   locked_until?: Date | null;

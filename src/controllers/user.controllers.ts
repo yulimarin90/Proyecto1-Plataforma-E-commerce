@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+/*import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import {
@@ -51,8 +51,7 @@ export const register = async (req: Request, res: Response) => {
       user.created_at,
       user.failed_attempts,
       user.locked_until, 
-*/
-    });
+
 
     // Enviar email con el enlace
     const transporter = nodemailer.createTransport({
@@ -263,4 +262,4 @@ export const replaceAccount = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     res.status(500).json({ message: "Error al reemplazar perfil", error });
   }
-};
+};*/

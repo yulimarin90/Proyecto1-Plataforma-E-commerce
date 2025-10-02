@@ -1,4 +1,4 @@
-// consultas SQL que interactúan con la base de datos
+/*// consultas SQL que interactúan con la base de datos
 import db from "../config/db"; // Conexión MySQL
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 
@@ -130,3 +130,4 @@ export const replaceUser = async (
     [data.name, data.email, data.telefono, data.direccion || null, id]
   );
 };
+*/

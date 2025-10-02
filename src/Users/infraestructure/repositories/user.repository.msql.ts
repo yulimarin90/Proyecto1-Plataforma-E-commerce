@@ -6,13 +6,14 @@ import { IUserRepository } from "../repositories/user.repository";
 export class MySQLUserRepository implements IUserRepository {
   async create(user: User): Promise<number> {
     const [result] = await db.query<ResultSetHeader>(
-      `INSERT INTO users (name, email, password, telefono, direccion, created_at, failed_attempts, locked_until, is_verified, verification_token, verification_expires)
-       VALUES (?, ?, ?, ?, ?, NOW(), 0, NULL, 0, ?, ?)`,
-      [user.name, user.email, user.password, user.telefono, user.direccion, user.verification_token, user.verification_expires]
+      `INSERT INTO users (name, email, password, phone, address, created_at, failed_attempts, locked_until, is_verified, verification_token, verification_expires)
+   VALUES (?, ?, ?, ?, ?, NOW(), 0, NULL, 0, ?, ?)`,
+      [user.name, user.email, user.password, user.phone, user.address, user.verification_token, user.verification_expires]
     );
     return result.insertId;
   }
 
+  
   async findByEmail(email: string): Promise<User | null> {
     const [rows] = await db.query<RowDataPacket[]>(
       "SELECT * FROM users WHERE email = ?",
@@ -43,8 +44,8 @@ export class MySQLUserRepository implements IUserRepository {
 
   async replace(id: number, data: User): Promise<void> {
     await db.query(
-      "UPDATE users SET name=?, email=?, telefono=?, direccion=? WHERE id=?",
-      [data.name, data.email, data.telefono, data.direccion || null, id]
+      "UPDATE users SET name=?, email=?, phone=?, direccion=? WHERE id=?",
+      [data.name, data.email, data.phone, data.address || null, id]
     );
   }
 

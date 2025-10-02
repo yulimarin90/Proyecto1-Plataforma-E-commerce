@@ -15,7 +15,13 @@ const userService = new UserService(new MySQLUserRepository());
 
 export const register = async (req: Request, res: Response) => {
   try {
-    const result = await userService.register(req.body); //me trae el metodo de service
+    const body = {
+      ...req.body,
+      phone: req.body.telefono,   // ✅ mapeo temporal
+    };
+    delete (body as any).telefono;
+
+    const result = await userService.register(body);
     res.status(201).json({ message: "Usuario creado. Revisa tu correo.", ...result });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
@@ -45,29 +51,32 @@ export const getProfile = async (req: Request, res: Response) => {
 export const updateAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const updatedUser = await UserService.updateAccount(userId, req.body);
+    const updatedUser = await userService.updateAccount(userId, req.body); // ✅ corregido
     res.json(updatedUser);
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    console.error("Error en updateAccount:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const replaceAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    const replacedUser = await UserService.replaceAccount(userId, req.body);
+    const replacedUser = await userService.replaceAccount(userId, req.body); // ✅ corregido
     res.json(replacedUser);
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    console.error("Error en replaceAccount:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const deleteAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    await UserService.deleteAccount(userId);
+    await userService.deleteAccount(userId); // ✅ corregido
     res.status(204).send();
   } catch (error: any) {
-    res.status(400).json({ message: error.message });
+    console.error("Error en deleteAccount:", error);
+    res.status(500).json({ message: error.message });
   }
 };

@@ -1,4 +1,4 @@
-import { Router } from "express";
+/*import { Router } from "express";
 import * as UserController from "../controllers/user.controllers";
 import authMiddleware from "../middlewares/auth.middlewares";
 
@@ -17,3 +17,4 @@ router.put("/users/me", authMiddleware, UserController.replaceAccount);  // comp
 router.delete("/users/me", authMiddleware, UserController.deleteAccount);
 
 export default router;
+*/

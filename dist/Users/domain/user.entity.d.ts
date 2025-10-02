@@ -1,0 +1,15 @@
+export interface User {
+    id?: number;
+    name: string;
+    email: string;
+    password: string;
+    phone: number;
+    direccion?: string;
+    created_at?: Date;
+    failed_attempts?: number;
+    locked_until?: Date | null;
+    is_verified?: boolean;
+    verification_token?: string | null;
+    verification_expires?: Date | null;
+}
+//# sourceMappingURL=user.entity.d.ts.map
