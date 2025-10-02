@@ -1,6 +1,6 @@
 // middlewares/product.middleware.ts
 import { Request, Response, NextFunction } from "express";
-import { Product } from "../repositories/products.repository1"; // 
+import { Product } from "../repositories/products.repository"; // 
 
 
 // Valida el body para crear/actualizar producto

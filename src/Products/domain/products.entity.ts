@@ -1,11 +1,16 @@
+
+
+// product.entity.ts
 export interface Product {
-  id: string;
+  id?: number;
   nombre: string;
-  descripcion: string;
+  imagen?: string;          
+  descripcion?: string;     
   precio: number;
   stock: number;
-  categoriaId: string;
-  estado: string; // activo / inactivo
-  createdAt: Date;
-  updatedAt: Date;
+  cantidad?: number;        
+  categoria_id: number;     
+  estado?: boolean;
+  created_at?: Date;
+  updated_at?: Date;
 }
