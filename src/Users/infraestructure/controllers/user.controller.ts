@@ -1,3 +1,4 @@
+
 /*Adaptador de Express → aplicación.
 
 Recibe req y res, valida, y llama a los servicios.
@@ -17,7 +18,7 @@ export const register = async (req: Request, res: Response) => {
   try {
     const body = {
       ...req.body,
-      phone: req.body.telefono,   // ✅ mapeo temporal
+      phone: req.body.phone||req.body.telefono,   // ✅ mapeo temporal
     };
     delete (body as any).telefono;
 
@@ -73,8 +74,11 @@ export const replaceAccount = async (req: Request, res: Response) => {
 export const deleteAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
-    await userService.deleteAccount(userId); // ✅ corregido
-    res.status(204).send();
+
+    await userService.deleteAccount(userId);
+
+    // 200 OK con mensaje
+    res.status(200).json({ message: "Cuenta eliminada correctamente" });
   } catch (error: any) {
     console.error("Error en deleteAccount:", error);
     res.status(500).json({ message: error.message });
