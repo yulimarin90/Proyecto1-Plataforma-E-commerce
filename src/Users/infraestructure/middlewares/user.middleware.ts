@@ -1,112 +1,113 @@
 //Lógica que se ejecuta antes de entrar a un controlador.
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "clavesecreta";
+import { AuthService } from "../../Authentication/auth.service"; // usa el AuthService centralizado
 
 // Extensión de Request para incluir `user`
 export interface AuthRequest extends Request {
   user?: any;
 }
 
-// Ruta que quiera una autenticacion: obtener perfil, editar perfil, ver usuarios.
+// 🔐 Middleware principal para proteger rutas
 const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-  const authHeader = req.headers["authorization"];
+  let token: string | undefined;
 
-  if (!authHeader) {
+  // 1️⃣ Encabezado Authorization: Bearer <token>
+  const authHeader = req.headers["authorization"];
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    token = authHeader.split(" ")[1];
+  }
+
+  // 2️⃣ Body
+  if (!token && req.body?.token) {
+    token = req.body.token;
+  }
+
+  // 3️⃣ Query string
+  if (!token && req.query?.token) {
+    token = String(req.query.token);
+  }
+
+  // 4️⃣ Si no hay token
+  if (!token) {
     return res.status(401).json({ message: "Token requerido" });
   }
 
-  const token = authHeader.split(" ")[1]; // "Bearer <token>"
-  if (!token) {
-    return res.status(401).json({ message: "Token inválido" });
-  }
-
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // se guarda el usuario en la request
+    const decoded = AuthService.verifyAccessToken(token); // 👈 usamos AuthService
+    req.user = decoded;
     next();
-  } catch (error) {
-    return res.status(403).json({ message: "Token inválido o expirado" });
+  } catch (error: any) {
+    return res.status(error.status || 403).json({ message: error.message });
   }
 };
 
+// ⬇️ export default para el middleware principal
 export default authMiddleware;
 
+/* ------------------- VALIDADORES ESPECÍFICOS ------------------- */
 
+// 🟢 Validación de Registro
 export const validateRegister = (req: Request, res: Response, next: NextFunction) => {
   const { email, password, name } = req.body;
 
-  //Campos obligatorios
   if (!email || !password || !name) {
     return res.status(400).json({ message: "Faltan campos obligatorios (name, email, password)" });
   }
 
-  //Formato de email
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     return res.status(400).json({ message: "Formato inválido de email" });
   }
 
-  //Longitud mínima de contraseña
-  if (password.length < 6) {
-    return res.status(400).json({ message: "Contraseña insegura, la contraseña debe tener mínimo 8 caracteres con mayúsculas, minúsculas y números" });
+  if (password.length < 8) {
+    return res.status(400).json({
+      message: "Contraseña insegura: mínimo 8 caracteres, con mayúsculas, minúsculas y números",
+    });
   }
 
-  next(); //pasa al controller si todo funciona
-};
-
-//Validación de Login
-export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "Faltan campos obligatorios (email, password)" }); // 400
-  }
-
-  
   next();
 };
 
+// 🟢 Validación de Login
+export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Faltan campos obligatorios (email, password)" });
+  }
+  next();
+};
 
-//Validación de Refresh Token
+// 🟢 Validación de Refresh Token
 export const validateRefreshToken = (req: Request, res: Response, next: NextFunction) => {
-  const { token } = req.body;
-
-  if (!token) {
-    return res.status(401).json({ message: "Token faltante o no enviado" }); // 401
+  const { refresh_token } = req.body;
+  if (!refresh_token) {
+    return res.status(401).json({ message: "Refresh token faltante" });
   }
 
   try {
-    jwt.verify(token, JWT_SECRET);
+    AuthService.verifyRefreshToken(refresh_token); // 👈 usamos AuthService
     next();
-  } catch (error) {
-    return res.status(401).json({ message: "Token inválido o expirado" }); // 401
+  } catch (error: any) {
+    return res.status(error.status || 401).json({ message: error.message });
   }
 };
 
-
-//Validación de Logout
+// 🟢 Validación de Logout
 export const validateLogout = (req: Request, res: Response, next: NextFunction) => {
   const { token } = req.body;
-
   if (!token) {
-    return res.status(400).json({ message: "Token faltante" }); // 400
+    return res.status(400).json({ message: "Token faltante" });
   }
-
   next();
 };
 
-
-//Validación de Editar Perfil
+// 🟢 Validación de Editar Perfil
 export const validateEditProfile = (req: Request, res: Response, next: NextFunction) => {
   const { password } = req.body;
-
   if (password && password.length < 8) {
     return res.status(400).json({
       message: "Contraseña inválida, debe tener mínimo 8 caracteres",
-    }); // 400
+    });
   }
-
   next();
 };

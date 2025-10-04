@@ -11,7 +11,7 @@ const router = Router();
 // Rutas públicas
 router.post("/auth/register", UserController.register);
 router.post("/auth/login", UserController.login);
-//router.post("/auth/refresh", UserController.refreshToken);
+router.post("/refresh", UserController.refreshToken);  
 
 // Rutas protegidas
 router.get("/users/me", authMiddleware, UserController.getProfile);

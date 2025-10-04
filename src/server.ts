@@ -1,25 +1,26 @@
+// server.ts
+import path from "path";
+import dotenv from "dotenv";
+
+// 👇 Forzamos ruta absoluta hacia la raíz del proyecto
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 import http from "http";
 import { Server } from "socket.io";
 import app from "./app";
 import { SocketAdapter } from "./websocket/socket.adapter";
 
-const PORT = process.env.PORT || 4001;
+console.log("JWT_SECRET:", process.env.JWT_SECRET);
+console.log("JWT_REFRESH_SECRET:", process.env.JWT_REFRESH_SECRET);
 
-// Crear servidor HTTP
+const PORT = process.env.PORT || 3001;
+
 const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: "*" } });
 
-// Crear instancia de socket.io
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
-
-// Inicializar adaptador de WebSockets
 const socketAdapter = new SocketAdapter(io);
 socketAdapter.initialize();
 
-// Levantar servidor
 server.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
 });

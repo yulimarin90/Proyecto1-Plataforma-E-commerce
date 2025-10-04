@@ -12,4 +12,5 @@ export interface User {
   is_verified?: boolean;
   verification_token?: string | null;
   verification_expires?: Date | null;
+  refresh_token?: string | null;
 }
