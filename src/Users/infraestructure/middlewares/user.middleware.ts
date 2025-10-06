@@ -1,6 +1,8 @@
 //Lógica que se ejecuta antes de entrar a un controlador.
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../../Authentication/auth.service"; // usa el AuthService centralizado
+import { MySQLUserRepository } from "../../infraestructure/repositories/user.repository.msql";
+const userRepo = new MySQLUserRepository();
 
 // Extensión de Request para incluir `user`
 export interface AuthRequest extends Request {
@@ -46,6 +48,7 @@ export default authMiddleware;
 
 /* ------------------- VALIDADORES ESPECÍFICOS ------------------- */
 
+
 // 🟢 Validación de Registro
 export const validateRegister = (req: Request, res: Response, next: NextFunction) => {
   const { email, password, name } = req.body;
@@ -59,9 +62,12 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
     return res.status(400).json({ message: "Formato inválido de email" });
   }
 
-  if (password.length < 8) {
+  // Nueva validación robusta
+  const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  if (!strongPassword.test(password)) {
     return res.status(400).json({
-      message: "Contraseña insegura: mínimo 8 caracteres, con mayúsculas, minúsculas y números",
+      message:
+        "La contraseña debe tener mínimo 8 caracteres, incluyendo mayúsculas, minúsculas y números.",
     });
   }
 
@@ -110,4 +116,28 @@ export const validateEditProfile = (req: Request, res: Response, next: NextFunct
     });
   }
   next();
+};
+
+export const requireVerifiedEmail = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Usuario no autenticado" });
+    }
+
+    const user = await userRepo.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    if (!user.is_verified) {
+      return res.status(403).json({
+        message: "Debes verificar tu email antes de realizar esta acción",
+      });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(500).json({ message: "Error verificando el email del usuario" });
+  }
 };

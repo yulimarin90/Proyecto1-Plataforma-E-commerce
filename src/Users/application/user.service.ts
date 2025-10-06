@@ -11,7 +11,7 @@ export class UserService {
   private readonly MAX_FAILED_ATTEMPTS = 3;
   private readonly LOCK_TIME_MINUTES = 15;
 
-  /** Registro de usuario */
+  //Registro
   async register(data: Omit<User, "id">) {
     const existing = await this.userRepository.findByEmail(data.email);
     if (existing) throw new Error("El correo ya está registrado");
@@ -36,44 +36,33 @@ export class UserService {
   const user = await this.userRepository.findByEmail(email);
   if (!user) throw { status: 404, message: "Usuario no encontrado" };
 
-    // Verificar bloqueo
-    if (user.locked_until && new Date(user.locked_until) > new Date()) {
-      throw { status: 429, message: `Cuenta bloqueada hasta ${user.locked_until}` };
-    }
+  // Si el usuario está bloqueado y el tiempo no ha pasado
+ if (user.locked_until && new Date(user.locked_until) > new Date()) {
+  throw { status: 403, message: "Cuenta bloqueada temporalmente. Intenta más tarde" };
+}
 
-    // Validar contraseña
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      const failed = (user.failed_attempts || 0) + 1;
-      let lockedUntil: Date | null = null;
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    await this.userRepository.incrementFailedAttempts(user.id!);
 
-      if (failed >= this.MAX_FAILED_ATTEMPTS) {
-        lockedUntil = new Date(Date.now() + this.LOCK_TIME_MINUTES * 60 * 1000);
-      }
+    if (user.failed_attempts + 1 >= 3) {
+  await this.userRepository.lockUser(user.id!);
+  throw { status: 403, message: "Demasiados intentos fallidos. Cuenta bloqueada temporalmente." };
+}
 
-      await this.userRepository.update(user.id!, {
-        failed_attempts: failed,
-        locked_until: lockedUntil,
-      });
+    throw { status: 401, message: "Contraseña incorrecta" };
+  }
 
-      if (failed >= this.MAX_FAILED_ATTEMPTS) {
-        throw { status: 429, message: "Cuenta bloqueada por demasiados intentos fallidos" };
-      } else {
-        throw { status: 401, message: `Contraseña incorrecta. Intentos: ${failed}/${this.MAX_FAILED_ATTEMPTS}` };
-      }
-    }
+  // Si la contraseña es correcta: resetear contador
+  await this.userRepository.resetFailedAttempts(user.id!);
 
-     await this.userRepository.update(user.id!, {
-    failed_attempts: 0,
-    locked_until: null,
-  });
-
-  // Generar tokens con AuthService
+  // Generar tokens
   const accessToken = AuthService.generateAccessToken({ id: user.id, email: user.email });
   const refreshToken = AuthService.generateRefreshToken({ id: user.id, email: user.email });
 
-  return { id: user.id!, accessToken, refreshToken };
+  return { id: user.id, accessToken, refreshToken };
 }
+
 
   /** Guardar refresh token */
   async saveRefreshToken(userId: number, token: string) {

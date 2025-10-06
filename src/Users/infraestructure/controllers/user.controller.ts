@@ -7,6 +7,8 @@ import { Request, Response } from "express";
 import { UserService } from "../../application/user.service";
 import { MySQLUserRepository } from "../../infraestructure/repositories/user.repository.msql";
 import { AuthService } from "../../Authentication/auth.service";
+import { JwtPayload } from "jsonwebtoken";
+
 
 const userService = new UserService(new MySQLUserRepository());
 
@@ -63,7 +65,7 @@ export const refreshToken = async (req: Request, res: Response) => {
     }
 
     // Validamos refresh token en AuthService
-    const payload = AuthService.verifyRefreshToken(refresh_token);
+    const payload = AuthService.verifyRefreshToken(refresh_token) as JwtPayload;
 
     // Validamos que siga activo en DB
     const valid = await userService.validateRefreshToken(payload.id, refresh_token);
