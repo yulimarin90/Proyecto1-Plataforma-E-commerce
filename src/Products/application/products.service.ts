@@ -1,32 +1,44 @@
+// products/application/products.service.ts
+import { ProductsRepository } from "../infraestructure/repositories/products.repository";
 import { Product } from "../domain/products.entity";
-import { ProductRepository } from "../infraestructure/repositories/products.repository";
 
-export class ProductService {
-  // No necesitamos instanciar el repositorio porque todos sus métodos son estáticos.
-
-  async create(data: Omit<Product, "id" | "created_at" | "updated_at">) {
-    const product: Product = {
-      id: 0, // Valor temporal, no se usará en la inserción
-      ...data,
-      created_at: new Date(),
-      updated_at: new Date(),
-    };
-    return ProductRepository.create(product);
+export class ProductsService {
+  static async createProduct(product: Product) {
+    const exists = await ProductsRepository.findByNombre(product.name);
+    if (exists) return "ALREADY_EXISTS";
+    const id = await ProductsRepository.create(product);
+    return await ProductsRepository.findById(id);
   }
 
-  async findAll() {
-    return ProductRepository.findAll();
+  static async getAllProducts() {
+    return await ProductsRepository.findAll();
   }
 
-  async findById(id: number) {
-    return ProductRepository.findById(id);
+  static async getProductById(id: string) {
+    return await ProductsRepository.findById(Number(id));
   }
 
-  async update(id: number, data: Partial<Product>) {
-    return ProductRepository.update(id, data);
+  static async updateProduct(id: string, data: Partial<Product>) {
+    const product = await ProductsRepository.findById(Number(id));
+    if (!product) return "NOT_FOUND";
+    if (data.name && data.name !== product.name) {
+      const exists = await ProductsRepository.findByNombre(data.name);
+      if (exists) return "CONFLICT";
+    }
+    return await ProductsRepository.update(Number(id), { ...product, ...data });
   }
 
-  async delete(id: number) {
-    return ProductRepository.delete(id);
+  static async deleteProduct(id: string): Promise<"NOT_FOUND" | "HAS_ORDERS" | "DELETED"> {
+    const product = await ProductsRepository.findById(Number(id));
+    if (!product) return "NOT_FOUND";
+
+    // aquí iría validación si hay órdenes asociadas → "HAS_ORDERS"
+    // por ahora devolvemos ok
+    await ProductsRepository.delete(Number(id));
+    return "DELETED";
+  }
+
+  static async getProductsByCategory(categoryId: string) {
+    return await ProductsRepository.findByCategory(Number(categoryId));
   }
 }

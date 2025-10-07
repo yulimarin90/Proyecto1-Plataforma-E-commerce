@@ -1,24 +1,22 @@
-// auth.middleware.ts
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { Router } from "express";
+import { OrderController } from "../order.controller";
+import { orderMiddleware } from "../order.middleware";
 
-interface AuthenticatedRequest extends Request {
-  user?: any;
-}
+const router = Router();
 
-export function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+// Crear orden
+router.post("/", orderMiddleware.validateCreate, OrderController.createOrder);
 
-  if (!token) {
-    return res.status(401).json({ error: "Token de acceso requerido" });
-  }
+// Listar todas las órdenes
+router.get("/", OrderController.getOrders);
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(403).json({ error: "Token inválido" });
-  }
-}
+// Obtener una orden por ID
+router.get("/:id", OrderController.getOrderById);
+
+// Actualizar orden (ejemplo: cambiar estado, productos, etc.)
+router.put("/:id", orderMiddleware.validateUpdate, OrderController.updateOrder);
+
+// Eliminar orden
+router.delete("/:id", OrderController.deleteOrder);
+
+export default router;

@@ -1,67 +1,67 @@
-
-import { ResultSetHeader, RowDataPacket } from "mysql2";
-import db from "../../../config/db";
+// products/infraestructure/repositories/products.repository.ts
+import { db } from "../../../config/db";
 import { Product } from "../../domain/products.entity";
 
-
-export class ProductRepository {
-  // Crear un producto
+export class ProductsRepository {
   static async create(product: Product) {
-    const [result]: any = await db.query(
+    const [result] = await db.query(
       `INSERT INTO products 
-        (nombre, imagen, descripcion, precio, stock, cantidad, categoria_id, estado, created_at, updated_at) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        (id, name, description, price, stock, sku, category_id, image_url, is_active) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        product.nombre,
-        product.imagen || null,
-        product.descripcion || null,
-        product.precio,
+        product.id,
+        product.name,
+        product.description,
+        product.price,
         product.stock,
-        product.cantidad ?? 0,
-        product.categoria_id,
-        product.estado ?? true,
+        product.sku,
+        product.category_id,
+        product.is_active || "active",
+        product.image_url || null,
       ]
     );
-    return { id: result.insertId, ...product };
+    return (result as any).insertId;
   }
 
-  // Listar todos los productos
-  static async findAll(): Promise<Product[]> {
-    const [rows]: any = await db.query("SELECT * FROM products");
-    return rows;
+  static async findAll() {
+    const [rows] = await db.query(`SELECT * FROM products`);
+    return rows as Product[];
   }
 
-  // Buscar un producto por ID
-  static async findById(id: number): Promise<Product | null> {
-    const [rows]: any = await db.query("SELECT * FROM products WHERE id = ?", [id]);
-    return rows.length > 0 ? rows[0] : null;
+  static async findById(id: number) {
+    const [rows] = await db.query(`SELECT * FROM products WHERE id = ?`, [id]);
+    return (rows as Product[])[0];
   }
 
-  // Actualizar un producto
+  static async findByNombre(nombre: string) {
+    const [rows] = await db.query(`SELECT * FROM products WHERE name = ?`, [this.name]);
+    return (rows as Product[])[0];
+  }
+
   static async update(id: number, product: Partial<Product>) {
-    const [result]: any = await db.query(
-      `UPDATE products 
-       SET nombre=?, imagen=?, descripcion=?, precio=?, stock=?, cantidad=?, categoria_id=?, estado=?, updated_at=NOW()
-       WHERE id=?`,
+    await db.query(
+      `UPDATE products SET name=?, description=?, price=?, sku=?, category_id=?, image_url=?, is_active=? WHERE id=?`,
       [
-        product.nombre,
-        product.imagen,
-        product.descripcion,
-        product.precio,
+        product.name,
+        product.description,
+        product.price,
         product.stock,
-        product.cantidad,
-        product.categoria_id,
-        product.estado,
+        product.sku,
+        product.category_id,
+        product.is_active || "active",
+        product.image_url || null,
         id,
       ]
     );
-    return result.affectedRows > 0;
+    return this.findById(id);
   }
 
-  // Eliminar un producto
   static async delete(id: number) {
-    const [result]: any = await db.query("DELETE FROM products WHERE id = ?", [id]);
-    return result.affectedRows > 0;
+    await db.query(`DELETE FROM products WHERE id=?`, [id]);
+  }
+
+  static async findByCategory(categoryId: number) {
+    const [rows] = await db.query(`SELECT * FROM products WHERE category_id=?`, [categoryId]);
+    return rows as Product[];
   }
 }
-
