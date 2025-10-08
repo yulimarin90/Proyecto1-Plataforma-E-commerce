@@ -10,6 +10,7 @@ import { Server } from "socket.io";
 import app from "./app";
 import { SocketAdapter } from "./websocket/socket.adapter";
 
+
 console.log("JWT_SECRET:", process.env.JWT_SECRET);
 console.log("JWT_REFRESH_SECRET:", process.env.JWT_REFRESH_SECRET);
 
@@ -24,3 +25,7 @@ socketAdapter.initialize();
 server.listen(PORT, () => {
   console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
 });
+
+
+
+
