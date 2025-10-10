@@ -1,13 +1,22 @@
-// products/infraestructure/repositories/products.repository.ts
-import { db } from "../../../config/db";
+import db from "../../../config/db";
 import { Product } from "../../domain/products.entity";
 
-export class ProductsRepository {
-  static async create(product: Product) {
+export interface IProductsRepository {
+  create(product: Product): Promise<number>;
+  findAll(): Promise<Product[]>;
+  findById(id: number): Promise<Product | undefined>;
+  findByNombre(name: string): Promise<Product | undefined>;
+  update(id: number, product: Partial<Product>): Promise<Product>;
+  delete(id: number): Promise<void>;
+  findByCategory(categoryId: number): Promise<Product[]>;
+}
+
+export class ProductsRepository implements IProductsRepository {
+  async create(product: Product): Promise<number> {
     const [result] = await db.query(
       `INSERT INTO products 
-        (id, name, description, price, stock, sku, category_id, image_url, is_active) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (id, name, description, price, stock, sku, category_id, image_url, is_active, is_discontinued) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         product.id,
         product.name,
@@ -16,51 +25,80 @@ export class ProductsRepository {
         product.stock,
         product.sku,
         product.category_id,
-        product.is_active || "active",
         product.image_url || null,
+        Number(product.is_active),
+    Number(product.is_discontinued),
       ]
     );
     return (result as any).insertId;
   }
 
-  static async findAll() {
+  async findAll(): Promise<Product[]> {
     const [rows] = await db.query(`SELECT * FROM products`);
     return rows as Product[];
   }
 
-  static async findById(id: number) {
+  async findById(id: number): Promise<Product | undefined> {
     const [rows] = await db.query(`SELECT * FROM products WHERE id = ?`, [id]);
     return (rows as Product[])[0];
   }
 
-  static async findByNombre(nombre: string) {
-    const [rows] = await db.query(`SELECT * FROM products WHERE name = ?`, [this.name]);
+  async findByNombre(nombre: string): Promise<Product | undefined> {
+    const [rows] = await db.query(`SELECT * FROM products WHERE name = ?`, [nombre]);
     return (rows as Product[])[0];
   }
 
-  static async update(id: number, product: Partial<Product>) {
-    await db.query(
-      `UPDATE products SET name=?, description=?, price=?, sku=?, category_id=?, image_url=?, is_active=? WHERE id=?`,
-      [
-        product.name,
-        product.description,
-        product.price,
-        product.stock,
-        product.sku,
-        product.category_id,
-        product.is_active || "active",
-        product.image_url || null,
-        id,
-      ]
-    );
-    return this.findById(id);
+  async update(id: number, product: Partial<Product>): Promise<Product> {
+  const fields: string[] = [];
+  const values: any[] = [];
+
+  if (product.name !== undefined) {
+    fields.push("name = ?");
+    values.push(product.name);
+  }
+  if (product.description !== undefined) {
+    fields.push("description = ?");
+    values.push(product.description);
+  }
+  if (product.price !== undefined) {
+    fields.push("price = ?");
+    values.push(product.price);
+  }
+  if (product.sku !== undefined) {
+    fields.push("sku = ?");
+    values.push(product.sku);
+  }
+  if (product.category_id !== undefined) {
+    fields.push("category_id = ?");
+    values.push(product.category_id);
+  }
+  if (product.image_url !== undefined) {
+    fields.push("image_url = ?");
+    values.push(product.image_url);
+  }
+  if (product.is_active !== undefined) {
+    fields.push("is_active = ?");
+    values.push(Number(product.is_active));
+  }
+  if (product.is_discontinued !== undefined) {
+    fields.push("is_discontinued = ?");
+    values.push(Number(product.is_discontinued));
   }
 
-  static async delete(id: number) {
+  if (fields.length === 0) throw { status: 400, message: "No hay campos para actualizar" };
+
+  values.push(id);
+  const sql = `UPDATE products SET ${fields.join(", ")} WHERE id = ?`;
+  await db.query(sql, values);
+
+  return this.findById(id) as Promise<Product>;
+}
+
+  async delete(id: number): Promise<void> {
     await db.query(`DELETE FROM products WHERE id=?`, [id]);
   }
 
-  static async findByCategory(categoryId: number) {
+  async findByCategory(categoryId: number): Promise<Product[]> {
     const [rows] = await db.query(`SELECT * FROM products WHERE category_id=?`, [categoryId]);
     return rows as Product[];
   }

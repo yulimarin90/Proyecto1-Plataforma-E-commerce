@@ -1,44 +1,54 @@
-// products/application/products.service.ts
-import { ProductsRepository } from "../infraestructure/repositories/products.repository";
+import { ProductsRepository, IProductsRepository } from "../infraestructure/repositories/products.repository";
 import { Product } from "../domain/products.entity";
 
 export class ProductsService {
-  static async createProduct(product: Product) {
-    const exists = await ProductsRepository.findByNombre(product.name);
-    if (exists) return "ALREADY_EXISTS";
-    const id = await ProductsRepository.create(product);
-    return await ProductsRepository.findById(id);
+  constructor(private productsRepository: IProductsRepository) {}
+
+  // Crear producto
+  async createProduct(product: Product) {
+    const exists = await this.productsRepository.findByNombre(product.name);
+    if (exists) throw { status: 409, message: "Producto ya existe" };
+
+    const id = await this.productsRepository.create(product);
+    return await this.productsRepository.findById(id);
   }
 
-  static async getAllProducts() {
-    return await ProductsRepository.findAll();
+  // Obtener todos los productos
+  async getAllProducts() {
+    return await this.productsRepository.findAll();
   }
 
-  static async getProductById(id: string) {
-    return await ProductsRepository.findById(Number(id));
+  // Obtener producto por ID
+  async getProductById(id: number) {
+    const product = await this.productsRepository.findById(id);
+    if (!product) throw { status: 404, message: "Producto no encontrado" };
+    return product;
   }
 
-  static async updateProduct(id: string, data: Partial<Product>) {
-    const product = await ProductsRepository.findById(Number(id));
-    if (!product) return "NOT_FOUND";
+  // Actualizar producto
+  async updateProduct(id: number, data: Partial<Product>) {
+    const product = await this.productsRepository.findById(id);
+    if (!product) throw { status: 404, message: "Producto no encontrado" };
+
     if (data.name && data.name !== product.name) {
-      const exists = await ProductsRepository.findByNombre(data.name);
-      if (exists) return "CONFLICT";
+      const exists = await this.productsRepository.findByNombre(data.name);
+      if (exists) throw { status: 409, message: "Nombre de producto ya en uso" };
     }
-    return await ProductsRepository.update(Number(id), { ...product, ...data });
+
+    return await this.productsRepository.update(id, { ...product, ...data });
   }
 
-  static async deleteProduct(id: string): Promise<"NOT_FOUND" | "HAS_ORDERS" | "DELETED"> {
-    const product = await ProductsRepository.findById(Number(id));
-    if (!product) return "NOT_FOUND";
+  // Eliminar producto
+  async deleteProduct(id: number): Promise<void> {
+    const product = await this.productsRepository.findById(id);
+    if (!product) throw { status: 404, message: "Producto no encontrado" };
 
-    // aquí iría validación si hay órdenes asociadas → "HAS_ORDERS"
-    // por ahora devolvemos ok
-    await ProductsRepository.delete(Number(id));
-    return "DELETED";
+    // Aquí podrías validar si hay órdenes asociadas
+    await this.productsRepository.delete(id);
   }
 
-  static async getProductsByCategory(categoryId: string) {
-    return await ProductsRepository.findByCategory(Number(categoryId));
+  // Obtener productos por categoría
+  async getProductsByCategory(categoryId: number) {
+    return await this.productsRepository.findByCategory(categoryId);
   }
 }

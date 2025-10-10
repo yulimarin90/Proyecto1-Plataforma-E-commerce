@@ -1,59 +1,188 @@
-
-// products/infraestructure/controllers/products.controller.ts
 import { Request, Response } from "express";
 import { ProductsService } from "../../application/products.service";
+import { ProductsRepository } from "../repositories/products.repository";
+import { Product } from "../../domain/products.entity"; // ajusta la ruta según tu proyecto
 
-export class ProductController {
-  static async createProduct(req: Request, res: Response) {
-    try {
-      const payload = req.body;
-      if (req.file) payload.imagen = req.file.path;
 
-      const result = await ProductsService.createProduct(payload);
-      if (result === "ALREADY_EXISTS") {
-        return res.status(409).json({ message: "Ya existe un producto con ese nombre" });
-      }
-      return res.status(201).json({ message: "Producto agregado con éxito", product: result });
-    } catch (err) {
-      return res.status(500).json({ message: "Error al crear producto", error: err });
-    }
-  }
+const productsService = new ProductsService(new ProductsRepository());
+type ProductResponse = Product & { price_formatted: string };
 
-  static async getProducts(_req: Request, res: Response) {
-    const products = await ProductsService.getAllProducts();
-    return res.status(200).json(products);
-  }
 
-  static async getProductById(req: Request, res: Response) {
-    const product = await ProductsService.getProductById(req.params.id);
-    if (!product) return res.status(404).json({ message: "El producto no existe" });
-    return res.status(200).json(product);
-  }
-
-  static async updateProduct(req: Request, res: Response) {
+// Crear producto
+export const createProduct = async (req: Request, res: Response) => {
+  try {
     const payload = req.body;
-    if (req.file) payload.imagen = req.file.path;
 
-    const updated = await ProductsService.updateProduct(req.params.product_id, payload);
-    if (updated === "NOT_FOUND") return res.status(404).json({ message: "Producto no encontrado" });
-    if (updated === "CONFLICT") return res.status(409).json({ message: "Nombre ya en uso" });
-    return res.status(200).json({ message: "Producto actualizado con éxito", product: updated });
+    
+    if (req.file) payload.image_url = req.file.path;
+
+    // convertir cualquier valor a 0 o 1
+    const parseBoolToNumber = (value: any, defaultValue: number): number => {
+      if (value === undefined || value === null) return defaultValue;
+      if (value === true || value === "true" || value === "1" || value === 1) return 1;
+      return 0;
+    };
+
+    // Convertir booleanos a número
+    payload.is_active = parseBoolToNumber(payload.is_active, 1);
+    payload.is_discontinued = parseBoolToNumber(payload.is_discontinued, 0);
+
+    
+    const result = await productsService.createProduct(payload);
+
+    res.status(201).json({ message: "Producto agregado con éxito", product: result });
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message || "Error al crear producto" });
   }
+};
 
-  static async deleteProduct(req: Request, res: Response) {
-    const deleted = await ProductsService.deleteProduct(req.params.product_id);
 
-    if (deleted === "NOT_FOUND") 
-      return res.status(404).json({ message: "Producto no encontrado" });
 
-    if (deleted === "HAS_ORDERS") 
-      return res.status(400).json({ message: "No se puede eliminar, tiene órdenes asociadas" });
+// Obtener todos los productos
+export const getProducts = async (_req: Request, res: Response) => {
+  try {
+    let products = await productsService.getAllProducts();
 
-    return res.status(204).send();
+    // Filtrar productos activos, con stock > 0 y con imagen
+    products = products.filter(
+      (p) => Number(p.is_active) === 1 && p.stock > 0 && p.image_url
+    );
+
+    // Formatear precio
+    const currency = "USD";
+    products = products.map((p) => ({
+      ...p,
+      price: Number(p.price), 
+      price_formatted: new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+      }).format(Number(p.price)),
+    }));
+
+    res.status(200).json(products);
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
   }
+};
 
-  static async getProductsByCategory(req: Request, res: Response) {
-    const products = await ProductsService.getProductsByCategory(req.params.id);
-    return res.status(200).json(products);
+export const updateProduct = async (req: Request, res: Response) => {
+  try {
+    const id = Number(req.params.product_id || req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "ID de producto inválido o faltante" });
+    }
+
+    const payload = req.body;
+    if (req.file) payload.image_url = req.file.path;
+
+   
+    const parseBoolToNumber = (value: any): number | undefined => {
+      if (value === undefined || value === null) return undefined;
+      if (value === true || value === "true" || value === "1" || value === 1) return 1;
+      return 0;
+    };
+
+    payload.is_active = parseBoolToNumber(payload.is_active);
+    payload.is_discontinued = parseBoolToNumber(payload.is_discontinued);
+
+    const updated = await productsService.updateProduct(id, payload);
+    res.status(200).json({ message: "Producto actualizado con éxito", product: updated });
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
   }
-}
+};
+
+
+
+// Eliminar producto
+export const deleteProduct = async (req: Request, res: Response) => {
+  try {
+    const idParam = req.params.product_id || req.params.id;
+    const id = Number(idParam);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "ID de producto inválido o faltante" });
+    }
+
+    await productsService.deleteProduct(id);
+    res.status(200).json({ message: "Producto eliminado correctamente" });
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+};
+
+// Obtener producto por ID
+export const getProductById = async (req: Request, res: Response) => {
+  try {
+    const idParam = req.params.id || req.params.product_id;
+    const id = Number(idParam);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "ID de producto inválido o faltante" });
+    }
+
+    const product = await productsService.getProductById(id);
+
+    // Validar que el producto exista y cumpla condiciones
+    if (
+      !product ||
+      Number(product.is_active) !== 1 ||
+      Number(product.stock) <= 0 ||
+      !product.image_url ||
+      Number(product.is_discontinued) === 1
+    ) {
+      return res.status(404).json({ message: "Producto no encontrado o no disponible" });
+    }
+
+    const currency = "USD";
+    const productResponse: ProductResponse = {
+      ...product,
+      price_formatted: new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(product.price)),
+    };
+
+    res.status(200).json(productResponse);
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+};
+
+// Obtener productos por categoría
+export const getProductsByCategory = async (req: Request, res: Response) => {
+  try {
+    const categoryId = Number(req.params.id);
+    if (isNaN(categoryId)) {
+      return res.status(400).json({ message: "ID de categoría inválido o faltante" });
+    }
+
+    let products = await productsService.getProductsByCategory(categoryId);
+
+    
+    products = products.filter(
+      (p) =>
+        Number(p.is_active) === 1 &&
+        Number(p.stock) > 0 &&
+        p.image_url &&
+        Number(p.is_discontinued) === 0
+    );
+
+    const currency = "USD";
+    const productsResponse: ProductResponse[] = products.map((p) => ({
+      ...p,
+      price_formatted: new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(p.price)),
+    }));
+
+    res.status(200).json(productsResponse);
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message });
+  }
+};

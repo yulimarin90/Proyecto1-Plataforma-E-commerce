@@ -1,5 +1,5 @@
 // Entidad e interfaces , reglas del negocio 
-// Para cuando se crea un nuevo usuario (no tiene id aún)
+// Para cuando se crea un nuevo usuario 
 export interface NewUser {
   name: string;
   email: string;
@@ -10,7 +10,7 @@ export interface NewUser {
   verification_expires?: Date | null;
 }
 
-// Para usuarios que ya existen (ya tienen id y todos los campos)
+// Para usuarios que ya existen 
 export interface User extends NewUser {
   id: number;
   created_at?: Date;

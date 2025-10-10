@@ -11,4 +11,5 @@ export interface Product {
   image_url?: string;
   created_at?: Date;
   updated_at?: Date;
+  is_discontinued?: number;
 }

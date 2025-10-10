@@ -1,13 +1,7 @@
-/*
-Adaptador de BD → aplicación.
 
-Implementa la interfaz definida en domain (IUserRepository).
-
-Traduce llamadas de alto nivel (createUser) en queries reales (SQL, Sequelize, etc.).
-*/
 import { NewUser, User } from "../../domain/user.entity";
 
-// Puerto del repositorio (contrato)
+// Puerto del repositorio
 export interface IUserRepository {
   create(user: NewUser): Promise<number>;
   findByEmail(email: string): Promise<User | null>;

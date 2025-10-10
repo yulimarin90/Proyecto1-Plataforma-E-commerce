@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 export class UserService {
   constructor(private userRepository: IUserRepository) {}
 
-  // Constantes de la clase
+ 
   private readonly MAX_FAILED_ATTEMPTS = 3;
   private readonly LOCK_TIME_MINUTES = 15;
 
@@ -31,7 +31,7 @@ export class UserService {
     return { id, verificationToken };
   }
 
-  /** Login de usuario */
+  //Login de usuario 
   async login(email: string, password: string) {
   const user = await this.userRepository.findByEmail(email);
   if (!user) throw { status: 404, message: "Usuario no encontrado" };
@@ -53,7 +53,7 @@ export class UserService {
     throw { status: 401, message: "Contraseña incorrecta" };
   }
 
-  // Si la contraseña es correcta: resetear contador
+  // Si la contraseña es correcta
   await this.userRepository.resetFailedAttempts(user.id!);
 
   // Generar tokens
@@ -64,18 +64,18 @@ export class UserService {
 }
 
 
-  /** Guardar refresh token */
+  //Guardar refresh token
   async saveRefreshToken(userId: number, token: string) {
     await this.userRepository.saveToken(userId, token);
   }
 
-  /** Validar refresh token en la DB */
+  //Validar refresh token en la DB
   async validateRefreshToken(userId: number, token: string): Promise<boolean> {
     const stored = await this.userRepository.findToken(token);
     return !!stored;
   }
 
-  /** Actualización parcial de cuenta */
+ 
   async updateAccount(userId: number, data: Partial<User>) {
     const user = await this.userRepository.findById(userId);
     if (!user) throw { status: 404, message: "Usuario no encontrado" };
@@ -84,7 +84,7 @@ export class UserService {
     return { message: "Usuario actualizado parcialmente" };
   }
 
-  /** Reemplazo completo de cuenta */
+  
   async replaceAccount(userId: number, data: Omit<User, "id">) {
     const user = await this.userRepository.findById(userId);
     if (!user) throw { status: 404, message: "Usuario no encontrado" };
@@ -93,7 +93,7 @@ export class UserService {
     return { message: "Usuario reemplazado completamente" };
   }
 
-  /** Eliminar cuenta */
+  //Eliminar cuenta
   async deleteAccount(userId: number) {
     const user = await this.userRepository.findById(userId);
     if (!user) throw { status: 404, message: "Usuario no encontrado" };
@@ -102,7 +102,7 @@ export class UserService {
     return { message: "Usuario eliminado correctamente" };
   }
 
-  /** Verificación de email */
+  //Verificación de email
   async verifyEmail(token: string) {
     if (!token) throw { status: 400, message: "Token de verificación faltante" };
 
@@ -120,4 +120,15 @@ export class UserService {
 
     return { id: user.id, email: user.email };
   }
+
+  //logout
+  async logout(token: string) {
+  const storedToken = await this.userRepository.findToken(token);
+  if (!storedToken) {
+    throw { status: 404, message: "Token no encontrado o ya expirado" };
+  }
+
+  await this.userRepository.deleteToken(token);
+  return { message: "Sesión cerrada exitosamente" };
+}
 }

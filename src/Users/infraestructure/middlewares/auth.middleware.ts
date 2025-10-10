@@ -10,7 +10,7 @@ export const verifyAuthToken = (req: Request, res: Response, next: NextFunction)
     if (!token) return res.status(401).json({ message: "Invalid token format" });
 
     const decoded = AuthService.verifyAccessToken(token);
-    (req as any).user = decoded; // guardamos el payload para usarlo en controladores
+    (req as any).user = decoded; 
     next();
   } catch (error: any) {
     return res.status(403).json({ message: "Token inválido o expirado" });

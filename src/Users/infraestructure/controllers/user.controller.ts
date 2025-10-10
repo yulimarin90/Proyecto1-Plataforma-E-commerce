@@ -1,6 +1,6 @@
 /* Adaptador de Express → aplicación.
-   Recibe req y res, valida, y llama a los servicios.
-   Su trabajo: traducir HTTP → casos de uso.
+Recibe req y res, valida, y llama a los servicios.
+traducir HTTP → casos de uso.
 */
 
 import { Request, Response } from "express";
@@ -12,7 +12,7 @@ import { JwtPayload } from "jsonwebtoken";
 
 const userService = new UserService(new MySQLUserRepository());
 
-/** Registro de usuario */
+//Registro de usuario
 export const register = async (req: Request, res: Response) => {
   try {
     const { id, verificationToken } = await userService.register(req.body);
@@ -26,7 +26,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-/** Verificación de email */
+//Verificación de email
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { token } = req.query;
@@ -37,18 +37,15 @@ export const verifyEmail = async (req: Request, res: Response) => {
   }
 };
 
-/** Login → genera access y refresh token */
+// Login 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Llamamos una sola vez al servicio
     const { id, accessToken, refreshToken } = await userService.login(email, password);
 
-    // Guardamos refresh token en DB (si tu flujo lo requiere)
     await userService.saveRefreshToken(id, refreshToken);
 
-    // Respondemos
     return res.status(200).json({ access_token: accessToken, refresh_token: refreshToken });
   } catch (error: any) {
     return res.status(error.status || 400).json({ message: error.message });
@@ -56,7 +53,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 
-/** Refresh → genera un nuevo access token */
+//Refresh token
 export const refreshToken = async (req: Request, res: Response) => {
   try {
     const { refresh_token } = req.body;
@@ -64,16 +61,14 @@ export const refreshToken = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Refresh token requerido" });
     }
 
-    // Validamos refresh token en AuthService
     const payload = AuthService.verifyRefreshToken(refresh_token) as JwtPayload;
 
-    // Validamos que siga activo en DB
     const valid = await userService.validateRefreshToken(payload.id, refresh_token);
     if (!valid) {
       return res.status(401).json({ message: "Refresh token no válido o expirado" });
     }
 
-    // Generamos nuevo access token
+    // nuevo access token
     const newAccessToken = AuthService.generateAccessToken({ id: payload.id, email: payload.email });
 
     res.status(200).json({ access_token: newAccessToken });
@@ -82,7 +77,7 @@ export const refreshToken = async (req: Request, res: Response) => {
   }
 };
 
-/** Perfil del usuario autenticado */
+//ver perfil
 export const getProfile = async (req: Request, res: Response) => {
   try {
     res.json({ user: (req as any).user });
@@ -91,7 +86,7 @@ export const getProfile = async (req: Request, res: Response) => {
   }
 };
 
-/** Actualización parcial de cuenta */
+//actualizacion parcial de algunos campos patch
 export const updateAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
@@ -102,7 +97,7 @@ export const updateAccount = async (req: Request, res: Response) => {
   }
 };
 
-/** Reemplazo completo de cuenta */
+//actualizacion completa de la cuenta put
 export const replaceAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
@@ -113,7 +108,7 @@ export const replaceAccount = async (req: Request, res: Response) => {
   }
 };
 
-/** Eliminación de cuenta */
+//delete eliminar cuenta
 export const deleteAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
@@ -123,3 +118,23 @@ export const deleteAccount = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+//logout
+export const logout = async (req: Request, res: Response) => {
+  try {
+    // Intentamos tomar token del header Authorization
+    let token = req.headers.authorization?.split(" ")[1];
+
+    // Si no hay token en header, revisamos el body
+    if (!token) token = req.body.token;
+
+    if (!token) return res.status(400).json({ message: "Token faltante" });
+
+    await userService.logout(token);
+
+    res.status(200).json({ message: "Sesión cerrada exitosamente" });
+  } catch (error: any) {
+    res.status(error.status || 500).json({ message: error.message || "Error al cerrar sesión" });
+  }
+};
+

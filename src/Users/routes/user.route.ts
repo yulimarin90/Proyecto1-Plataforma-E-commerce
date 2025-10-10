@@ -1,6 +1,4 @@
-/*Define las rutas HTTP de Express.
-
-Apunta cada endpoint a un controller y (opcionalmente) a un middleware.*/
+//rutas HTTP de Express. Apunta cada endpoint a un controller y (opcionalmente) a un middleware.
 
 import { Router } from "express";
 import * as UserController from "../infraestructure/controllers/user.controller";
@@ -13,6 +11,7 @@ const router = Router();
 // Rutas públicas
 router.post("/auth/register", UserController.register);
 router.post("/auth/login", UserController.login);
+router.post("/auth/logout", UserController.logout);
 router.post("/refresh", UserController.refreshToken);  
 
 // Rutas protegidas

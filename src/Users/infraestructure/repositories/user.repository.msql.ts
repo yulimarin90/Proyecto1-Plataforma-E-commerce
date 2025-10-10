@@ -15,7 +15,7 @@ export class MySQLUserRepository implements IUserRepository {
       user.name,
       user.email,
       user.password,
-      user.phone,  // << aquí está cayendo NULL
+      user.phone,  
       user.address,
       user.verification_token,
       user.verification_expires,
@@ -36,7 +36,7 @@ export class MySQLUserRepository implements IUserRepository {
     return null;
   }
 
-  const userRow = rows[0]!; // ← el "!" le dice a TS: "ya comprobé que no es undefined"
+  const userRow = rows[0]!; 
 
   const user: User = {
     id: userRow.id,
@@ -138,7 +138,7 @@ async findById(id: number): Promise<User | null> {
 
   async lockUser(userId: number): Promise<void> {
     const lockUntil = new Date();
-    lockUntil.setMinutes(lockUntil.getMinutes() + 10); // 10 minutos bloqueado
+    lockUntil.setMinutes(lockUntil.getMinutes() + 10); 
     await db.query("UPDATE users SET locked_until = ?, failed_attempts = 0 WHERE id = ?", [
       lockUntil,
       userId,

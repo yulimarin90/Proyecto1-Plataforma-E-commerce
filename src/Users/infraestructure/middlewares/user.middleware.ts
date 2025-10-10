@@ -1,41 +1,38 @@
-//Lógica que se ejecuta antes de entrar a un controlador.
+//ponemos la Lógica que se ejecuta antes de entrar a un controlador.
 import { Request, Response, NextFunction } from "express";
-import { AuthService } from "../../Authentication/auth.service"; // usa el AuthService centralizado
+import { AuthService } from "../../Authentication/auth.service"; 
 import { MySQLUserRepository } from "../../infraestructure/repositories/user.repository.msql";
 const userRepo = new MySQLUserRepository();
 
-// Extensión de Request para incluir `user`
+
 export interface AuthRequest extends Request {
   user?: any;
 }
 
-// 🔐 Middleware principal para proteger rutas
+// Middleware principal
 const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token: string | undefined;
 
-  // 1️⃣ Encabezado Authorization: Bearer <token>
   const authHeader = req.headers["authorization"];
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
   }
 
-  // 2️⃣ Body
   if (!token && req.body?.token) {
     token = req.body.token;
   }
 
-  // 3️⃣ Query string
   if (!token && req.query?.token) {
     token = String(req.query.token);
   }
 
-  // 4️⃣ Si no hay token
+  // si no hay token
   if (!token) {
     return res.status(401).json({ message: "Token requerido" });
   }
 
   try {
-    const decoded = AuthService.verifyAccessToken(token); // 👈 usamos AuthService
+    const decoded = AuthService.verifyAccessToken(token); 
     req.user = decoded;
     next();
   } catch (error: any) {
@@ -43,13 +40,12 @@ const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => 
   }
 };
 
-// ⬇️ export default para el middleware principal
 export default authMiddleware;
 
-/* ------------------- VALIDADORES ESPECÍFICOS ------------------- */
+//validadores especificos con reglas de negocio
 
 
-// 🟢 Validación de Registro
+// Validación de Registro
 export const validateRegister = (req: Request, res: Response, next: NextFunction) => {
   const { email, password, name } = req.body;
 
@@ -62,7 +58,7 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
     return res.status(400).json({ message: "Formato inválido de email" });
   }
 
-  // Nueva validación robusta
+  //contraseña segura
   const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
   if (!strongPassword.test(password)) {
     return res.status(400).json({
@@ -74,7 +70,7 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
   next();
 };
 
-// 🟢 Validación de Login
+//Validación de Login
 export const validateLogin = (req: Request, res: Response, next: NextFunction) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -83,7 +79,7 @@ export const validateLogin = (req: Request, res: Response, next: NextFunction) =
   next();
 };
 
-// 🟢 Validación de Refresh Token
+// Validación de Refresh Token
 export const validateRefreshToken = (req: Request, res: Response, next: NextFunction) => {
   const { refresh_token } = req.body;
   if (!refresh_token) {
@@ -91,23 +87,27 @@ export const validateRefreshToken = (req: Request, res: Response, next: NextFunc
   }
 
   try {
-    AuthService.verifyRefreshToken(refresh_token); // 👈 usamos AuthService
+    AuthService.verifyRefreshToken(refresh_token); 
     next();
   } catch (error: any) {
     return res.status(error.status || 401).json({ message: error.message });
   }
 };
 
-// 🟢 Validación de Logout
+// Validación de Logout
 export const validateLogout = (req: Request, res: Response, next: NextFunction) => {
-  const { token } = req.body;
-  if (!token) {
-    return res.status(400).json({ message: "Token faltante" });
-  }
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(400).json({ message: "Token faltante" });
+
+  const token = authHeader.split(" ")[1];
+  if (!token) return res.status(400).json({ message: "Token faltante" });
+
+  // Puedes guardarlo en req.body para el controller si quieres
+  (req as any).token = token;
   next();
 };
 
-// 🟢 Validación de Editar Perfil
+// Validación de Editar Perfil
 export const validateEditProfile = (req: Request, res: Response, next: NextFunction) => {
   const { password } = req.body;
   if (password && password.length < 8) {
