@@ -28,7 +28,7 @@ export const getCategories = async (_req: Request, res: Response) => {
 
 export const updateCategory = async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = Number(req.params.category_id);
     if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
 
     const payload = req.body;
@@ -43,7 +43,7 @@ export const updateCategory = async (req: Request, res: Response) => {
 
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
-    const id = Number(req.params.id);
+    const id = Number(req.params.category_id);
     if (isNaN(id)) return res.status(400).json({ message: "ID inválido" });
 
     await categoriesService.deleteCategory(id);

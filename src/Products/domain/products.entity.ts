@@ -7,7 +7,7 @@ export interface Product {
   stock: number;
   sku: number;
   category_id: number;
-  is_active: string;  // "active" | "inactive"
+  is_active: string;  
   image_url?: string;
   created_at?: Date;
   updated_at?: Date;
