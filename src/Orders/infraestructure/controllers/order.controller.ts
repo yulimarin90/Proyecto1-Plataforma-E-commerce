@@ -1,63 +1,141 @@
-// orders.controller.ts
-// Controladores de endpoints de órdenes
-
 import { Request, Response } from "express";
 import { OrdersService } from "../../application/order.service";
 
-const service = new OrdersService();
+const ordersService = new OrdersService();
 
-export class OrdersController {
-  static async createOrder(req: Request, res: Response) {
-    try {
-      const order = await service.createOrder(req.body);
-      res.status(201).json(order);
-    } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
-    }
-  }
 
-  static async getOrdersByUser(req: Request, res: Response) {
-    try {
-      const orders = await service.getOrdersByUser(req.params.userId);
-      res.status(200).json(orders);
-    } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
-    }
-  }
+const parseBoolToNumber = (value: any, defaultValue: number = 1) => {
+  if (value === undefined || value === null) return defaultValue;
+  if (value === true || value === "true" || value === "1" || value === 1) return 1;
+  return 0;
+};
 
-  static async getOrderById(req: Request, res: Response) {
-    try {
-      const order = await service.getOrderById(req.params.orderId);
-      res.status(200).json(order);
-    } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
-    }
-  }
 
-  static async cancelOrder(req: Request, res: Response) {
-    try {
-      const cancelled = await service.cancelOrder(req.params.orderId, req.body.reason);
-      res.status(200).json(cancelled);
-    } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
-    }
-  }
+export const createOrder = async (req: Request, res: Response) => {
+  try {
+    const payload = req.body;
+    const order = await ordersService.createOrder(payload);
 
-  static async assignTracking(req: Request, res: Response) {
-    try {
-      const tracking = await service.assignTracking(req.params.orderId, req.body);
-      res.status(201).json(tracking);
-    } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
-    }
+    res.status(201).json({
+      code: 201,
+      message: "Orden creada exitosamente",
+      data: order
+    });
+  } catch (error: any) {
+    res.status(error.status || 500).json({
+      code: error.status || 500,
+      message: error.message || "Error interno al crear la orden"
+    });
   }
+};
 
-  static async getAllOrders(req: Request, res: Response) {
-    try {
-      const orders = await service.getAllOrders();
-      res.status(200).json(orders);
-    } catch (err: any) {
-      res.status(err.status || 500).json({ error: err.message });
+
+export const getOrdersByUser = async (req: Request, res: Response) => {
+  try {
+    const userId = Number(req.params.user_id);
+    if (isNaN(userId)) {
+      return res.status(400).json({ code: 400, message: "ID de usuario inválido" });
     }
+
+    const orders = await ordersService.getOrdersByUser(userId);
+    res.status(200).json({
+      code: 200,
+      message: "Lista de órdenes del usuario",
+      data: orders
+    });
+  } catch (error: any) {
+    res.status(error.status || 500).json({
+      code: error.status || 500,
+      message: error.message || "Error interno al obtener órdenes del usuario"
+    });
   }
-}
+};
+
+
+export const getOrderById = async (req: Request, res: Response) => {
+  try {
+    const orderId = Number(req.params.order_id);
+    if (isNaN(orderId)) {
+      return res.status(400).json({ code: 400, message: "ID de orden inválido" });
+    }
+
+    const order = await ordersService.getOrderById(orderId);
+    if (!order) {
+      return res.status(404).json({ code: 404, message: "Orden no encontrada" });
+    }
+
+    res.status(200).json({
+      code: 200,
+      message: "Detalle completo de la orden",
+      data: order
+    });
+  } catch (error: any) {
+    res.status(error.status || 500).json({
+      code: error.status || 500,
+      message: error.message || "Error interno al obtener la orden"
+    });
+  }
+};
+
+
+export const cancelOrder = async (req: Request, res: Response) => {
+  try {
+    const orderId = Number(req.params.order_id);
+    if (isNaN(orderId)) {
+      return res.status(400).json({ code: 400, message: "ID de orden inválido" });
+    }
+
+    const { reason } = req.body;
+    const cancelled = await ordersService.cancelOrder(orderId, reason);
+
+    res.status(200).json({
+      code: 200,
+      message: "Orden cancelada correctamente",
+      data: cancelled
+    });
+  } catch (error: any) {
+    res.status(error.status || 500).json({
+      code: error.status || 500,
+      message: error.message || "Error interno al cancelar la orden"
+    });
+  }
+};
+
+
+export const assignTracking = async (req: Request, res: Response) => {
+  try {
+    const orderId = Number(req.params.order_id);
+    if (isNaN(orderId)) {
+      return res.status(400).json({ code: 400, message: "ID de orden inválido" });
+    }
+
+    const tracking = await ordersService.assignTracking(orderId, req.body);
+    res.status(201).json({
+      code: 201,
+      message: "Número de tracking asignado correctamente",
+      data: tracking
+    });
+  } catch (error: any) {
+    res.status(error.status || 500).json({
+      code: error.status || 500,
+      message: error.message || "Error interno al asignar tracking"
+    });
+  }
+};
+
+
+export const getAllOrders = async (_req: Request, res: Response) => {
+  try {
+    const orders = await ordersService.getAllOrders();
+    res.status(200).json({
+      code: 200,
+      message: "Listado de todas las órdenes",
+      data: orders
+    });
+  } catch (error: any) {
+    res.status(error.status || 500).json({
+      code: error.status || 500,
+      message: error.message || "Error interno al obtener todas las órdenes"
+    });
+  }
+};

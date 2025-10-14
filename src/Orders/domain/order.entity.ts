@@ -1,14 +1,24 @@
 
 
-// order.entity.ts
+export type OrderStatus =
+  | 'PENDIENTE'
+  | 'PREPARANDO'
+  | 'EN_TRANSITO'
+  | 'EN_ENTREGA'
+  | 'ENTREGADO'
+  | 'CANCELADO';
+
 export interface Order {
   id?: number;
-  user_id: number;             
-  payment_method: string;      
-  shipping_address: string;    
-  status?: string;
-  cancel_reason?: string;      
-  tracking?: any;
-  created_at?: Date;
-  updated_at?: Date;
+  order_number?: string;             
+  user_id: number;
+  total_amount: number;
+
+  shipping_address: string;
+  shipping_method?: string;
+  payment_method: string;
+  notes?: string;
+
+  status?: OrderStatus;
+  cancellation_reason?: string;
 }

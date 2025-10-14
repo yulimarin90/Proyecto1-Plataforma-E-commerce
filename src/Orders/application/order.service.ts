@@ -1,40 +1,71 @@
-// orders.service.ts
 import { OrdersRepository } from "../infraestructure/repositories/order.repository";
 
 export class OrdersService {
   private repo: OrdersRepository;
 
   constructor() {
-    this.repo = new OrdersRepository(); // Instancia normal
+    this.repo = new OrdersRepository();
+  }
+
+  private generateOrderNumber(): string {
+    const date = new Date();
+    const yyyymmdd = date.toISOString().slice(0, 10).replace(/-/g, "");
+    const random = Math.floor(Math.random() * 90000) + 10000;
+    return `ORD-${yyyymmdd}-${random}`;
   }
 
   async createOrder(orderData: any) {
     if (!orderData.userId || !orderData.products?.length) {
       throw { status: 400, message: "Datos incompletos" };
     }
-    return await this.repo.createOrder(orderData);
-  }
 
-  async getOrdersByUser(userId: string) {
+      // Calcular el total
+  const totalAmount = orderData.products.reduce((acc: number, product: any) => {
+    const subtotal = product.price * product.quantity;
+    return acc + subtotal;
+  }, 0);
+
+  orderData.order_number = this.generateOrderNumber();
+  orderData.status = "PENDIENTE";
+  orderData.total_amount = totalAmount.toFixed(2); 
+
+  
+  orderData.products = orderData.products.map((p: any) => ({
+  product_id: p.id,  
+  price: p.price,
+  quantity: p.quantity,
+  subtotal: (p.price * p.quantity).toFixed(2)
+  }));
+
+  return await this.repo.createOrder(orderData)
+  }
+  
+  async getOrdersByUser(userId: number) {
     return await this.repo.getOrdersByUser(userId);
   }
-
-  async getOrderById(orderId: string) {
+  
+  async getOrderById(orderId: number) {
     const order = await this.repo.getOrderById(orderId);
     if (!order) throw { status: 404, message: "Orden no encontrada" };
     return order;
   }
 
-  async cancelOrder(orderId: string, reason: string) {
+  async cancelOrder(orderId: number, reason: string) {
     const order = await this.repo.getOrderById(orderId);
     if (!order) throw { status: 404, message: "Orden no encontrada" };
+
+    if (order.status !== "PENDIENTE") {
+      throw { status: 400, message: "Solo se pueden cancelar órdenes pendientes" };
+    }
+
     if (order.status === "shipped" || order.status === "completed") {
       throw { status: 400, message: "La orden no puede cancelarse" };
     }
+
     return await this.repo.cancelOrder(orderId, reason);
   }
 
-  async assignTracking(orderId: string, trackingData: any) {
+  async assignTracking(orderId: number, trackingData: any) {
     if (!trackingData.numeroGuia || !trackingData.transportadora) {
       throw { status: 400, message: "Datos de tracking incompletos" };
     }
@@ -44,4 +75,6 @@ export class OrdersService {
   async getAllOrders() {
     return await this.repo.getAllOrders();
   }
+
+  
 }
