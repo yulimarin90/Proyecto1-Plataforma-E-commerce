@@ -98,6 +98,11 @@ export class ProductsRepository implements IProductsRepository {
     await db.query(`DELETE FROM products WHERE id=?`, [id]);
   }
 
+  async updateStock(productId: number, newStock: number): Promise<void> {
+  await db.query(`UPDATE products SET stock = ? WHERE id = ?`, [newStock, productId]);
+}
+
+
   async findByCategory(categoryId: number): Promise<Product[]> {
     const [rows] = await db.query(`SELECT * FROM products WHERE category_id=?`, [categoryId]);
     return rows as Product[];

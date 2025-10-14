@@ -15,7 +15,7 @@ export default function authMiddleware(req: Request, res: Response, next: NextFu
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    (req as any).user = decoded; // adjuntamos info del usuario
+    (req as any).user = decoded; 
     next();
   } catch (err) {
     return res.status(403).json({ message: "Token inválido o expirado" });
@@ -67,11 +67,9 @@ export const validateUpdateProduct = (req: Request, res: Response, next: NextFun
   next();
 };
 
-// Validación antes de eliminar producto (por ejemplo, verificar órdenes asociadas)
-export const checkNoOrdersAssociated = async (req: ProductRequest, res: Response, next: NextFunction) => {
-  // Aquí iría tu lógica real para revisar si el producto tiene órdenes
-  // const hasOrders = await ordersService.hasOrders(req.product.id);
-  // if (hasOrders) return res.status(400).json({ message: "No se puede eliminar, tiene órdenes asociadas" });
 
+export const checkNoOrdersAssociated = async (req: ProductRequest, res: Response, next: NextFunction) => {
+  //revisar si el producto tiene órdenes
+  
   next();
 };
