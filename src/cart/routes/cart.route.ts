@@ -1,14 +1,50 @@
+// src/Cart/routes/cart.routes.ts
 import express from "express";
 import { CartController } from "../infraestructure/controllers/cart.controller";
-import { verifyUser } from "../infraestructure/middlewares/cart.middleware";
+import { 
+  authMiddleware, 
+  checkCartExpiration, 
+  validateItemData 
+} from "../infraestructure/middlewares/cart.middleware";
 
 const router = express.Router();
-const controller = new CartController();
+const cartController = new CartController();
 
-router.get("/", verifyUser, controller.viewCart);
-router.post("/items", verifyUser, controller.addItem);
-router.patch("/items", verifyUser, controller.updateQuantity);
-router.delete("/items", verifyUser, controller.removeItem);
-router.delete("/", verifyUser, controller.clearCart);
+// 📦 Rutas del carrito
+router.get(
+  "/cart",
+  authMiddleware,
+  checkCartExpiration,
+  cartController.viewCart
+);
+
+router.post(
+  "/admin/cart/items",
+  authMiddleware,
+  checkCartExpiration,
+  validateItemData,
+  cartController.addItem
+);
+
+router.put(
+  "/admin/cart/items/:item_id",
+  authMiddleware,
+  checkCartExpiration,
+  validateItemData,
+  cartController.updateQuantity
+);
+
+router.delete(
+  "/admin/cart/items",
+  authMiddleware,
+  checkCartExpiration,
+  cartController.removeItem
+);
+
+router.delete(
+  "/admin/cart/items/:item_id",
+  authMiddleware,
+  cartController.clearCart
+);
 
 export default router;
