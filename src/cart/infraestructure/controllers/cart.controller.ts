@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
 import { CartService } from "../../application/cart.service";
-import { CartRepositoryMySQL } from "../repositories/cart.repository.msql";
-import { ProductsRepository } from "../../../Products/infraestructure/repositories/products.repository";
+import { ProductsRepository } from "../repositories/products.repository";
+import { CartRepository } from "../repositories/cart.repository.msql";
 
-const cartRepo = new CartRepositoryMySQL();
-const productRepo = new ProductsRepository();
-const service = new CartService(cartRepo);
+// Instancias del servicio y repositorios
+const repository = new CartRepository();
+const productRepository = new ProductsRepository();
+const service = new CartService(repository);
 
 export class CartController {
   async viewCart(req: Request, res: Response) {

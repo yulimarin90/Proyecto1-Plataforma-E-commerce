@@ -1,50 +1,37 @@
-// src/Cart/routes/cart.routes.ts
-import express from "express";
+// 📦 Rutas del módulo Cart
+// Define los endpoints REST para gestionar el carrito de compras.
+// Usa controladores y middlewares para validar autenticación y datos.
+
+import { Router } from "express";
+import authMiddleware from "../../Users/infraestructure/middlewares/user.middleware";
+import { verifyUser } from "../infraestructure/middlewares/cart.middleware";
 import { CartController } from "../infraestructure/controllers/cart.controller";
-import { 
-  authMiddleware, 
-  checkCartExpiration, 
-  validateItemData 
-} from "../infraestructure/middlewares/cart.middleware";
 
-const router = express.Router();
-const cartController = new CartController();
+const router = Router();
+const controller = new CartController();
 
-// 📦 Rutas del carrito
-router.get(
-  "/cart",
-  authMiddleware,
-  checkCartExpiration,
-  cartController.viewCart
+// 🔒Rutas protegidas
+// Todas las rutas del carrito requieren autenticación del usuario
+// ya que están asociadas a un user_id.
+router.use(authMiddleware, verifyUser);
+
+// Obtener carrito del usuario
+router.get("/cart", (req, res) => controller.viewCart(req, res));
+
+// Agregar producto al carrito
+router.post("/cart/items", (req, res) => controller.addItem(req, res));
+
+// Actualizar cantidad de un producto
+router.patch("/cart/items/:item_id", (req, res) =>
+  controller.updateQuantity(req, res)
 );
 
-router.post(
-  "/admin/cart/items",
-  authMiddleware,
-  checkCartExpiration,
-  validateItemData,
-  cartController.addItem
+// Eliminar producto específico
+router.delete("/cart/items/:productId", (req, res) =>
+  controller.removeItem(req, res)
 );
 
-router.put(
-  "/admin/cart/items/:item_id",
-  authMiddleware,
-  checkCartExpiration,
-  validateItemData,
-  cartController.updateQuantity
-);
-
-router.delete(
-  "/admin/cart/items",
-  authMiddleware,
-  checkCartExpiration,
-  cartController.removeItem
-);
-
-router.delete(
-  "/admin/cart/items/:item_id",
-  authMiddleware,
-  cartController.clearCart
-);
+// Vaciar carrito completo
+router.delete("/cart/clear", (req, res) => controller.clearCart(req, res));
 
 export default router;
