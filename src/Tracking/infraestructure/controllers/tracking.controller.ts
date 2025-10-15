@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { TrackingService } from "../../application/tracking.service";
 import { TrackingRepository } from "../repositories/tracking.repository";
 import { Tracking, TrackingNotification } from "../../domain/tracking.entity";
+import { AuthService } from "../../../Users/Authentication/auth.service";
+
 
 const trackingService = new TrackingService(new TrackingRepository());
 

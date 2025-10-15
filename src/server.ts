@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 import http from "http";
 import { Server } from "socket.io";
 import app from "./app";
-import { SocketAdapter } from "./websocket/socket.adapter";
+import { SocketAdapter } from "./Tracking/websocket/socket.adapter";
 
 
 console.log("JWT_SECRET:", process.env.JWT_SECRET);

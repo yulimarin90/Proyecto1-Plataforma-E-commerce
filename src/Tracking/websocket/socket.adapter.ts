@@ -9,14 +9,14 @@ export class SocketAdapter {
 
   public initialize() {
     this.io.on("connection", (socket: Socket) => {
-      console.log(`⚡ Nueva conexión: ${socket.id}`);
+      console.log(`Nueva conexión: ${socket.id}`);
 
       // Evento de prueba
       socket.emit("welcome", "Bienvenido al servidor WebSocket 🚀");
 
       // Escuchar eventos del cliente
       socket.on("mensaje", (data) => {
-        console.log("📩 Mensaje recibido:", data);
+        console.log("Mensaje recibido:", data);
 
         // Aquí podrías llamar un caso de uso del dominio
         // ej: this.userService.sendMessage(data)
@@ -25,7 +25,7 @@ export class SocketAdapter {
       });
 
       socket.on("disconnect", () => {
-        console.log(`❌ Cliente desconectado: ${socket.id}`);
+        console.log(`Cliente desconectado: ${socket.id}`);
       });
     });
   }

@@ -12,7 +12,10 @@ import {
   validateDeleteTracking,
   validateQueryParams
 } from "../infraestructure/middlewares/tracking.middleware";
+import { TrackingService } from "../application/tracking.service";
+import { TrackingRepository } from "../infraestructure/repositories/tracking.repository";
 
+const trackingService = new TrackingService(new TrackingRepository());
 const router = Router();
 
 // Configuración de WebSocket para notificaciones en tiempo real
@@ -35,9 +38,9 @@ export const initializeTrackingSocket = (io: SocketIOServer) => {
     // Solicitar actualización de tracking
     socket.on('request_tracking_update', async (data: { trackingId: number }) => {
       try {
-        // Aquí podrías emitir el estado actual del tracking
-        // const tracking = await trackingService.getTrackingById(data.trackingId);
-        // socket.emit('tracking_current_status', tracking);
+        // Estado actual del tracking
+         const tracking = await trackingService.getTrackingById(data.trackingId);
+         socket.emit('tracking_current_status', tracking);
       } catch (error) {
         socket.emit('error', { message: 'Error al obtener estado del tracking' });
       }
@@ -49,20 +52,19 @@ export const initializeTrackingSocket = (io: SocketIOServer) => {
     });
   });
 
-  // Eventos periódicos para actualizaciones automáticas
+  
   setInterval(async () => {
     try {
-      // Emitir actualizaciones de trackings activos
-      // const activeTrackings = await trackingService.getActiveTrackings();
-      // io.emit('active_trackings_update', activeTrackings);
+      // Se emiten actualizaciones de trackings activos
+       const activeTrackings = await trackingService.getActiveTrackings();
+       io.emit('active_trackings_update', activeTrackings);
     } catch (error) {
       console.error('Error en actualización periódica de trackings:', error);
     }
-  }, 30000); // Cada 30 segundos
+  }, 30000); // Para cada 30 segundos
 };
 
 // Rutas públicas (no requieren autenticación)
-
 // Obtener todos los trackings con filtros y paginación
 router.get("/trackings", validateQueryParams, TrackingController.getTrackings);
 
@@ -81,8 +83,8 @@ router.get("/trackings/active", TrackingController.getActiveTrackings);
 // Obtener trackings por estado
 router.get("/trackings/status/:status", TrackingController.getTrackingsByStatus);
 
-// Rutas protegidas (requieren autenticación de administrador)
 
+// Rutas protegidas (requieren autenticación de administrador)
 // Crear tracking
 router.post(
   "/admin/trackings",
@@ -130,30 +132,6 @@ router.get("/trackings/health", (req, res) => {
   });
 });
 
-// Endpoint para obtener estadísticas de trackings
-router.get("/admin/trackings/stats", authMiddleware, async (req, res) => {
-  try {
-    // Aquí podrías agregar lógica para obtener estadísticas
-    const stats = {
-      total_trackings: 0,
-      active_trackings: 0,
-      delivered_today: 0,
-      pending_deliveries: 0,
-      by_status: {
-        pending: 0,
-        in_transit: 0,
-        out_for_delivery: 0,
-        delivered: 0,
-        cancelled: 0,
-        returned: 0
-      }
-    };
-
-    res.status(200).json(stats);
-  } catch (error: any) {
-    res.status(500).json({ message: "Error al obtener estadísticas" });
-  }
-});
 
 // Endpoint para bulk update de estados (actualización masiva)
 router.post(
@@ -174,15 +152,14 @@ router.post(
       }
 
       if (!location || location.trim().length < 2) {
-        return res.status(400).json({ message: "Ubicación inválida o requerida (mínimo 2 caracteres)" });
+        return res.status(400).json({ message: "Ubicación inválida o requerida" });
       }
 
-      // Aquí iría la lógica para actualizar múltiples trackings
       const results = [];
       for (const trackingId of tracking_ids) {
         try {
-          // const result = await trackingService.updateTrackingStatus(trackingId, status, location, notes);
-          // results.push({ tracking_id: trackingId, success: true, result });
+          const result = await trackingService.updateTrackingStatus(trackingId, status, location, notes);
+          results.push({ tracking_id: trackingId, success: true, result });
         } catch (error) {
           if (error instanceof Error) {
             results.push({ tracking_id: trackingId, success: false, error: error.message });

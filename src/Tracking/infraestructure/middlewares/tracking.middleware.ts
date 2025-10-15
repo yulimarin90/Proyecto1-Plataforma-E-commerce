@@ -59,27 +59,11 @@ export const validateCreateTracking = (req: Request, res: Response, next: NextFu
     });
   }
 
-  if (!current_location || current_location.trim().length < 2) {
-    return res.status(400).json({ message: "Ubicación actual inválida o requerida (mínimo 2 caracteres)" });
-  }
-
-  if (!carrier_name || carrier_name.trim().length < 2) {
-    return res.status(400).json({ message: "Nombre del transportista inválido o requerido (mínimo 2 caracteres)" });
-  }
-
-  // Validar fecha de entrega estimada si se proporciona
+   // Validar fecha de entrega estimada si se proporciona
   if (req.body.estimated_delivery_date) {
     const estDate = new Date(req.body.estimated_delivery_date);
     if (isNaN(estDate.getTime()) || estDate <= new Date()) {
-      return res.status(400).json({ message: "Fecha de entrega estimada inválida o debe ser futura" });
-    }
-  }
-
-  // Validar teléfono del transportista si se proporciona
-  if (req.body.carrier_phone) {
-    const phoneRegex = /^[+]?[\d\s\-\(\)]+$/;
-    if (!phoneRegex.test(req.body.carrier_phone)) {
-      return res.status(400).json({ message: "Teléfono del transportista inválido" });
+      return res.status(400).json({ message: "Fecha de entrega estimada inválida" });
     }
   }
 
@@ -97,11 +81,11 @@ export const validateUpdateTracking = (req: Request, res: Response, next: NextFu
   }
 
   if (current_location && current_location.trim().length < 2) {
-    return res.status(400).json({ message: "Ubicación actual inválida (mínimo 2 caracteres)" });
+    return res.status(400).json({ message: "Ubicación actual inválida" });
   }
 
   if (carrier_name && carrier_name.trim().length < 2) {
-    return res.status(400).json({ message: "Nombre del transportista inválido (mínimo 2 caracteres)" });
+    return res.status(400).json({ message: "Nombre del transportista inválido" });
   }
 
   // Validar fecha de entrega estimada si se proporciona
@@ -109,14 +93,6 @@ export const validateUpdateTracking = (req: Request, res: Response, next: NextFu
     const estDate = new Date(req.body.estimated_delivery_date);
     if (isNaN(estDate.getTime())) {
       return res.status(400).json({ message: "Fecha de entrega estimada inválida" });
-    }
-  }
-
-  // Validar teléfono del transportista si se proporciona
-  if (req.body.carrier_phone) {
-    const phoneRegex = /^[+]?[\d\s\-\(\)]+$/;
-    if (!phoneRegex.test(req.body.carrier_phone)) {
-      return res.status(400).json({ message: "Teléfono del transportista inválido" });
     }
   }
 
@@ -134,7 +110,7 @@ export const validateUpdateStatus = (req: Request, res: Response, next: NextFunc
   }
 
   if (!location || location.trim().length < 2) {
-    return res.status(400).json({ message: "Ubicación inválida o requerida (mínimo 2 caracteres)" });
+    return res.status(400).json({ message: "Ubicación inválida o requerida" });
   }
 
   // Validar notas si se proporcionan
