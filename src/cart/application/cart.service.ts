@@ -1,12 +1,13 @@
 // src/Cart/application/cart.service.ts
 
 import { ICartRepository } from "../infraestructure/repositories/cart.repository";
-import { Cart, CartOperations, CartItem } from "../domain/cart.entity";
+import { Cart, CartItem } from "../domain/cart.entity";
+import { CartOperations } from "../domain/cart.operations";
 
 export class CartService {
   constructor(private repository: ICartRepository) {}
 
-  // 📦 Obtener carrito o crearlo si no existe
+  // Obtener carrito o crearlo si no existe
   async getCart(userId: number): Promise<Cart> {
     let cart = await this.repository.findByUser(userId);
     if (!cart) {

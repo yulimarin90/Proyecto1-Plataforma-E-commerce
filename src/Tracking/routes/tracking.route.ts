@@ -65,27 +65,16 @@ export const initializeTrackingSocket = (io: SocketIOServer) => {
 };
 
 // Rutas públicas (no requieren autenticación)
-// Obtener todos los trackings con filtros y paginación
+
 router.get("/trackings", validateQueryParams, TrackingController.getTrackings);
-
-// Obtener tracking por ID
 router.get("/trackings/:id", trackingExistsMiddleware, TrackingController.getTrackingById);
-
-// Obtener tracking por número de seguimiento
 router.get("/trackings/number/:tracking_number", trackingByNumberExistsMiddleware, TrackingController.getTrackingByNumber);
-
-// Obtener tracking por orden
 router.get("/orders/:order_id/tracking", TrackingController.getTrackingByOrder);
-
-// Obtener trackings activos
 router.get("/trackings/active", TrackingController.getActiveTrackings);
-
-// Obtener trackings por estado
 router.get("/trackings/status/:status", TrackingController.getTrackingsByStatus);
 
 
 // Rutas protegidas (requieren autenticación de administrador)
-// Crear tracking
 router.post(
   "/admin/trackings",
   authMiddleware,
@@ -93,7 +82,6 @@ router.post(
   TrackingController.createTracking
 );
 
-// Actualizar tracking completo
 router.put(
   "/admin/trackings/:tracking_id",
   authMiddleware,
@@ -103,7 +91,6 @@ router.put(
   TrackingController.updateTracking
 );
 
-// Actualizar estado del tracking (endpoint principal para actualizaciones en tiempo real)
 router.patch(
   "/admin/trackings/:tracking_id/status",
   authMiddleware,
@@ -113,7 +100,6 @@ router.patch(
   TrackingController.updateTrackingStatus
 );
 
-// Eliminar tracking
 router.delete(
   "/admin/trackings/:tracking_id",
   authMiddleware,
@@ -122,7 +108,6 @@ router.delete(
   TrackingController.deleteTracking
 );
 
-// Endpoint para health check del servicio de tracking
 router.get("/trackings/health", (req, res) => {
   res.status(200).json({
     status: "OK",
@@ -131,55 +116,5 @@ router.get("/trackings/health", (req, res) => {
     version: "1.0.0"
   });
 });
-
-
-// Endpoint para bulk update de estados (actualización masiva)
-router.post(
-  "/admin/trackings/bulk-update",
-  authMiddleware,
-  async (req, res) => {
-    try {
-      const { tracking_ids, status, location, notes } = req.body;
-
-      if (!tracking_ids || !Array.isArray(tracking_ids) || tracking_ids.length === 0) {
-        return res.status(400).json({ message: "Lista de IDs de tracking requerida" });
-      }
-
-      if (!status || !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status)) {
-        return res.status(400).json({ 
-          message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
-        });
-      }
-
-      if (!location || location.trim().length < 2) {
-        return res.status(400).json({ message: "Ubicación inválida o requerida" });
-      }
-
-      const results = [];
-      for (const trackingId of tracking_ids) {
-        try {
-          const result = await trackingService.updateTrackingStatus(trackingId, status, location, notes);
-          results.push({ tracking_id: trackingId, success: true, result });
-        } catch (error) {
-          if (error instanceof Error) {
-            results.push({ tracking_id: trackingId, success: false, error: error.message });
-          } else {
-            results.push({ tracking_id: trackingId, success: false, error: String(error) });
-          }
-        }
-      }
-
-      res.status(200).json({
-        message: "Actualización masiva completada",
-        results,
-        total_processed: tracking_ids.length,
-        successful: results.filter(r => r.success).length,
-        failed: results.filter(r => !r.success).length
-      });
-    } catch (error: any) {
-      res.status(500).json({ message: "Error en actualización masiva" });
-    }
-  }
-);
 
 export default router;

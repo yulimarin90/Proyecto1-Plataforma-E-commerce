@@ -1,4 +1,4 @@
-// 📦 Rutas del módulo Cart
+// Rutas del módulo Cart
 // Define los endpoints REST para gestionar el carrito de compras.
 // Usa controladores y middlewares para validar autenticación y datos.
 
@@ -10,7 +10,7 @@ import { CartController } from "../infraestructure/controllers/cart.controller";
 const router = Router();
 const controller = new CartController();
 
-// 🔒Rutas protegidas
+// Rutas protegidas
 // Todas las rutas del carrito requieren autenticación del usuario
 // ya que están asociadas a un user_id.
 router.use(authMiddleware, verifyUser);

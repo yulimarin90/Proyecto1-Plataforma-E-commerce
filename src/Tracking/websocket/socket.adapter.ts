@@ -11,14 +11,13 @@ export class SocketAdapter {
     this.io.on("connection", (socket: Socket) => {
       console.log(`Nueva conexión: ${socket.id}`);
 
-      // Evento de prueba
-      socket.emit("welcome", "Bienvenido al servidor WebSocket 🚀");
+      socket.emit("welcome", "Bienvenido al servidor WebSocket ");
 
-      // Escuchar eventos del cliente
+      // Escucha eventos del cliente
       socket.on("mensaje", (data) => {
         console.log("Mensaje recibido:", data);
 
-        // Aquí podrías llamar un caso de uso del dominio
+        // llamar un caso de uso del dominio
         // ej: this.userService.sendMessage(data)
 
         socket.emit("respuesta", `Recibí tu mensaje: ${data}`);
