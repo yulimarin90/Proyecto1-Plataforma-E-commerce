@@ -1,5 +1,3 @@
-// src/Cart/application/cart.service.ts
-
 import { ICartRepository } from "../infraestructure/repositories/cart.repository";
 import { Cart, CartItem } from "../domain/cart.entity";
 import { CartOperations } from "../domain/cart.operations";
@@ -7,9 +5,11 @@ import { CartOperations } from "../domain/cart.operations";
 export class CartService {
   constructor(private repository: ICartRepository) {}
 
-  // Obtener carrito o crearlo si no existe
+  // Obtener carrito del usuario o crearlo si no existe
   async getCart(userId: number): Promise<Cart> {
     let cart = await this.repository.findByUser(userId);
+
+    // Si no existe, crear uno nuevo
     if (!cart) {
       cart = {
         id: 0,
@@ -24,76 +24,45 @@ export class CartService {
       await this.repository.save(cart);
     }
 
-    this.checkExpiration(cart);
+    // Verificar expiración
+    const operations = new CartOperations(cart);
+    operations.checkExpiration();
+
     return cart;
   }
 
-  // ➕ Agregar producto al carrito
+  // Agregar producto al carrito
   async addItem(
-  userId: number,
-  product: Omit<CartItem, "added_at" | "price_locked_until" | "subtotal">
-) {
-  // Validaciones iniciales
-  if (!product.product_id || typeof product.product_id !== "number") {
-    throw new Error("El ID del producto no es válido");
-  }
-
-  if (product.quantity <= 0) {
-    throw new Error("La cantidad debe ser mayor a 0");
-  }
-
-  if (product.price <= 0) {
-    throw new Error("El precio debe ser mayor a 0");
-  }
-
-  if (product.stock_available < product.quantity) {
-    throw new Error("Cantidad supera el stock disponible");
-  }
-
-  // Obtener carrito del usuario
-  const cart = await this.getCart(userId);
-  const existing = cart.items.find(i => i.product_id === product.product_id);
-  const now = new Date();
-
-  if (existing) {
-    // Si ya existe el producto en el carrito → aumentar cantidad
-    const newQuantity = existing.quantity + product.quantity;
-
-    if (newQuantity > existing.stock_available) {
+    userId: number,
+    product: Omit<CartItem, "added_at" | "price_locked_until" | "subtotal">
+  ) {
+    // Validaciones iniciales
+    if (!product.product_id || typeof product.product_id !== "number") {
+      throw new Error("El ID del producto no es válido");
+    }
+    if (product.quantity <= 0) {
+      throw new Error("La cantidad debe ser mayor a 0");
+    }
+    if (product.price <= 0) {
+      throw new Error("El precio debe ser mayor a 0");
+    }
+    if (product.stock_available < product.quantity) {
       throw new Error("Cantidad supera el stock disponible");
     }
 
-    existing.quantity = newQuantity;
-    existing.subtotal = Number((existing.price * existing.quantity).toFixed(2));
-  } else {
-    // Si es un nuevo producto → crear ítem nuevo
-    const lockedUntil = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2h
+    // Obtener carrito
+    const cart = await this.getCart(userId);
+    const operations = new CartOperations(cart);
 
-    const newItem: CartItem = {
-      product_id: Number(product.product_id),
-      name: product.name,
-      quantity: Number(product.quantity),
-      price: Number(product.price),
-      stock_available: Number(product.stock_available),
-      added_at: now,
-      price_locked_until: lockedUntil,
-      subtotal: Number((product.price * product.quantity).toFixed(2)),
-    };
+    // Agregar producto mediante CartOperations
+    operations.addItem(product);
 
-    cart.items.push(newItem);
+    // Guardar cambios
+    await this.repository.save(cart);
+    return cart;
   }
 
-  // Recalcular totales
-  this.refreshTotals(cart);
-
-  // Guardar cambios en BD
-  await this.repository.save(cart);
-
-  return cart;
-}
-
-
-  // ✍️ Actualizar cantidad de un producto existente
+  // Actualizar cantidad de un producto existente
   async updateQuantity(
     userId: number,
     productId: number,
@@ -101,56 +70,32 @@ export class CartService {
     currentStock: number
   ) {
     const cart = await this.getCart(userId);
-    const item = cart.items.find(i => i.product_id === productId);
+    const operations = new CartOperations(cart);
 
-    if (!item) throw new Error("Producto no encontrado en el carrito");
-    if (quantity <= 0) throw new Error("Cantidad inválida");
-    if (quantity > currentStock) throw new Error("Cantidad supera el stock disponible");
+    operations.updateQuantity(productId, quantity, currentStock);
 
-    item.quantity = quantity;
-    item.subtotal = item.price * quantity;
-
-    this.refreshTotals(cart);
     await this.repository.save(cart);
     return cart;
   }
 
-  // 🗑️ Eliminar un producto
+  // Eliminar un producto del carrito
   async removeItem(userId: number, productId: number) {
     const cart = await this.getCart(userId);
-    cart.items = cart.items.filter(i => i.product_id !== productId);
+    const operations = new CartOperations(cart);
 
-    this.refreshTotals(cart);
+    operations.removeItem(productId);
+
     await this.repository.save(cart);
     return cart;
   }
 
-  // 🧹 Vaciar carrito
+  // Vaciar carrito
   async clearCart(userId: number) {
     const cart = await this.getCart(userId);
-    cart.items = [];
-    cart.total_amount = 0;
-    cart.updated_at = new Date();
+    const operations = new CartOperations(cart);
+
+    operations.clear();
 
     await this.repository.save(cart);
-  }
-
-  // 🕒 Verificar expiración del carrito
-  private checkExpiration(cart: Cart) {
-    const now = new Date();
-    if (cart.expires_at && now > cart.expires_at) {
-      cart.status = "expired";
-      throw new Error("El carrito ha expirado por inactividad");
-    }
-  }
-
-  // 🧮 Recalcular totales y actualizar fechas
-  private refreshTotals(cart: Cart) {
-    cart.total_amount = cart.items.reduce(
-      (sum, item) => sum + (item.subtotal || 0),
-      0
-    );
-    cart.updated_at = new Date();
-    cart.expires_at = new Date(cart.updated_at.getTime() + 24 * 60 * 60 * 1000);
   }
 }

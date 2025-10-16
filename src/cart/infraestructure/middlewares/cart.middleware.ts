@@ -1,14 +1,16 @@
-// 🛒 Middleware de Carrito
+// Middleware de Carrito
 // Lógica que se ejecuta antes de los controladores relacionados con el carrito
 import { CartService } from "../../application/cart.service";
 import { CartRepository } from "../repositories/cart.repository.msql";
-import { ProductsRepository } from "../repositories/products.repository";
+import { ProductsRepository } from "../../../Products/infraestructure/repositories/products.repository";
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
-const cartService = new CartService(new CartRepository());
-const productRepository = new ProductsRepository();
+const productsRepository = new ProductsRepository();
+const cartRepository = new CartRepository(productsRepository);
+const cartService = new CartService(cartRepository);
+
 
 // Extensión de Request con información del carrito
 export interface CartRequest extends Request {
@@ -17,7 +19,7 @@ export interface CartRequest extends Request {
   product?: any;
 }
 
-// ✅ Middleware para verificar que el usuario esté autenticado
+// Middleware para verificar que el usuario esté autenticado
 export function verifyUser(req: Request, res: Response, next: NextFunction) {
   const userId = req.headers["x-user-id"];
   
@@ -28,7 +30,7 @@ export function verifyUser(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// ✅ Middleware para autenticación mediante JWT
+// Middleware para autenticación mediante JWT
 export const authCartMiddleware = (req: CartRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ message: "Token requerido" });
@@ -45,7 +47,7 @@ export const authCartMiddleware = (req: CartRequest, res: Response, next: NextFu
   }
 };
 
-// ✅ Middleware para verificar que el carrito exista
+// Middleware para verificar que el carrito exista
 export const ensureCartExists = async (req: CartRequest, res: Response, next: NextFunction) => {
   try {
     const userId = Number(req.user?.id || req.headers["x-user-id"]);
@@ -67,7 +69,7 @@ export const ensureCartExists = async (req: CartRequest, res: Response, next: Ne
   }
 };
 
-// ✅ Middleware para verificar stock antes de agregar o actualizar ítems
+// Middleware para verificar stock antes de agregar o actualizar ítems
 export const checkProductStock = async (req: CartRequest, res: Response, next: NextFunction) => {
   try {
     const { productId, cantidad } = req.body;
@@ -75,7 +77,7 @@ export const checkProductStock = async (req: CartRequest, res: Response, next: N
       return res.status(400).json({ message: "productId y cantidad son requeridos" });
     }
 
-    const product = await productRepository.findById(Number(productId));
+    const product = await productsRepository.findById(Number(productId));
     if (!product) return res.status(404).json({ message: "Producto no encontrado" });
 
     if (cantidad > product.stock) {
@@ -90,7 +92,7 @@ export const checkProductStock = async (req: CartRequest, res: Response, next: N
   }
 };
 
-// ✅ Middleware para validar estructura del body al agregar o actualizar ítems
+// Middleware para validar estructura del body al agregar o actualizar ítems
 export const validateCartItem = (req: Request, res: Response, next: NextFunction) => {
   const { productId, cantidad } = req.body;
   if (!productId || typeof productId !== "number") {
