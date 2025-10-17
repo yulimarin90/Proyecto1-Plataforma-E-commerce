@@ -1,6 +1,6 @@
 import { Cart, CartItem } from "./cart.entity";
 
-// Clase que contiene las operaciones principales del carrito (añadir, quitar, actualizar)
+
 export class CartOperations {
   // Recibe una instancia del carrito sobre la cual actuará
   constructor(public cart: Cart) {}
