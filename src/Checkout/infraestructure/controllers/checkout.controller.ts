@@ -2,7 +2,12 @@
 import { Request, Response } from "express";
 import { CheckoutService } from "../../application/checkout.service";
 
-const checkoutService = new CheckoutService();
+let checkoutService = new CheckoutService();
+
+// Setter para pruebas: permite inyectar un mock desde los tests de integración
+export const setCheckoutService = (svc: any) => {
+  checkoutService = svc;
+};
 
 export class CheckoutController {
 

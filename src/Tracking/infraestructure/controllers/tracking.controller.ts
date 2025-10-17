@@ -4,8 +4,11 @@ import { TrackingRepository } from "../repositories/tracking.repository";
 import { Tracking, TrackingNotification } from "../../domain/tracking.entity";
 import { AuthService } from "../../../Users/Authentication/auth.service";
 
-
-const trackingService = new TrackingService(new TrackingRepository());
+let trackingService = new TrackingService(new TrackingRepository());
+// Setter para pruebas: permite inyectar un mock desde los tests de integración
+export const setTrackingService = (svc: any) => {
+  trackingService = svc;
+};
 
 type TrackingResponse = Tracking & { 
   status_display: string;

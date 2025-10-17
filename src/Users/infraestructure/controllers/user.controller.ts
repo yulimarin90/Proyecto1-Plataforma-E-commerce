@@ -1,7 +1,3 @@
-/* Adaptador de Express → aplicación.
-Recibe req y res, valida, y llama a los servicios.
-traducir HTTP → casos de uso.
-*/
 
 import { Request, Response } from "express";
 import { UserService } from "../../application/user.service";
@@ -11,6 +7,11 @@ import { JwtPayload } from "jsonwebtoken";
 
 
 let userService = new UserService(new MySQLUserRepository());
+
+// Setter para pruebas: permite inyectar un mock desde los tests de integración
+export const setUserService = (svc: any) => {
+  userService = svc;
+};
 
 //Registro de usuario
 export const register = async (req: Request, res: Response) => {

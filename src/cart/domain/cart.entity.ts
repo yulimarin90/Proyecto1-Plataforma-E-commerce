@@ -1,5 +1,3 @@
-// src/cart/domain/cart.entity.ts
-
 // Representa cada producto dentro del carrito
 export interface CartItem {
   product_id: number;

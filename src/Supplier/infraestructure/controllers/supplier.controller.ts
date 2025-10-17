@@ -2,7 +2,11 @@ import { Request, Response } from "express";
 import { SuppliersService } from "../../application/supplier.service";
 import { SuppliersRepository } from "../repositories/supplier.repository";
 
-const suppliersService = new SuppliersService(new SuppliersRepository());
+let suppliersService = new SuppliersService(new SuppliersRepository());
+// Setter para pruebas: permite inyectar un mock desde los tests de integración
+export const setSuppliersService = (svc: any) => {
+  suppliersService = svc;
+};
 
 const parseBoolToNumber = (value: any, defaultValue: number = 1) => {
   if (value === undefined || value === null) return defaultValue;
