@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+/*import { Request, Response } from "express";
 import { CartService } from "../../application/cart.service";
 import { ProductsRepository } from "../repositories/products.repository";
 import { CartRepository } from "../repositories/cart.repository.msql";
@@ -115,3 +115,4 @@ export class CartController {
     }
   }
 }
+*/

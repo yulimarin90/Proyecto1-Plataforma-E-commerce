@@ -1,5 +1,5 @@
 // src/Cart/application/cart.service.ts
-
+/*
 import { ICartRepository } from "../infraestructure/repositories/cart.repository";
 import { Cart, CartItem } from "../domain/cart.entity";
 import { CartOperations } from "../domain/cart.operations";
@@ -153,4 +153,5 @@ export class CartService {
     cart.updated_at = new Date();
     cart.expires_at = new Date(cart.updated_at.getTime() + 24 * 60 * 60 * 1000);
   }
-}
+}7
+*/

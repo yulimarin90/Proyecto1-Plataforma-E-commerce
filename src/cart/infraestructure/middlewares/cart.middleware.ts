@@ -1,6 +1,6 @@
-// 🛒 Middleware de Carrito
+//*/ 🛒 Middleware de Carrito
 // Lógica que se ejecuta antes de los controladores relacionados con el carrito
-import { CartService } from "../../application/cart.service";
+/*import { CartService } from "../../application/cart.service";
 import { CartRepository } from "../repositories/cart.repository.msql";
 import { ProductsRepository } from "../repositories/products.repository";
 import { Request, Response, NextFunction } from "express";
@@ -101,3 +101,4 @@ export const validateCartItem = (req: Request, res: Response, next: NextFunction
   }
   next();
 };
+*/

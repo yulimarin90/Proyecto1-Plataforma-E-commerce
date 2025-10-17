@@ -1,7 +1,7 @@
 // Rutas del módulo Cart
 // Define los endpoints REST para gestionar el carrito de compras.
 // Usa controladores y middlewares para validar autenticación y datos.
-
+/*
 import { Router } from "express";
 import authMiddleware from "../../Users/infraestructure/middlewares/user.middleware";
 import { verifyUser } from "../infraestructure/middlewares/cart.middleware";
@@ -34,4 +34,4 @@ router.delete("/cart/items/:productId", (req, res) =>
 // Vaciar carrito completo
 router.delete("/cart/clear", (req, res) => controller.clearCart(req, res));
 
-export default router;
+export default router; */

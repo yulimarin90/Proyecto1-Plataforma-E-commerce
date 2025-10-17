@@ -1,7 +1,7 @@
 // 📦 Repositorio MySQL para la entidad Cart
 // Implementa la interfaz CartRepository y gestiona todas las operaciones del carrito
 // Se conecta directamente con la base de datos MySQL usando el pool definido en config/db.ts
-
+/*
 import db from "../../../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { Cart, CartItem } from "../../domain/cart.entity";
@@ -31,7 +31,9 @@ export class CartRepository  implements CartRepository {
       [cartRow.id]
     );
 
-    // Mapeamos las filas de la base de datos a objetos del dominio CartItem
+    /*
+ 
+    / Mapeamos las filas de la base de datos a objetos del dominio CartItem
     const items: CartItem[] = itemRows.map((r: RowDataPacket) => ({
       product_id: r.product_id,
       name: r.name,
@@ -85,7 +87,7 @@ export class CartRepository  implements CartRepository {
       );
     }
   }
-
+/*
   // 🗑️ Eliminar completamente el carrito de un usuario (opcional)
   async deleteCart(userId: number): Promise<void> {
     // Primero eliminamos los ítems asociados
@@ -96,3 +98,4 @@ export class CartRepository  implements CartRepository {
 
   
 }
+*/

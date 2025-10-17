@@ -10,7 +10,7 @@ import { AuthService } from "../../Authentication/auth.service";
 import { JwtPayload } from "jsonwebtoken";
 
 
-const userService = new UserService(new MySQLUserRepository());
+let userService = new UserService(new MySQLUserRepository());
 
 //Registro de usuario
 export const register = async (req: Request, res: Response) => {
