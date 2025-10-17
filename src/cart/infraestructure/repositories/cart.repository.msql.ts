@@ -1,6 +1,3 @@
-// Repositorio MySQL para la entidad Cart
-// Implementa la interfaz CartRepository y gestiona todas las operaciones del carrito
-// Se conecta directamente con la base de datos MySQL usando el pool definido en config/db.ts
 
 import db from "../../../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
@@ -122,14 +119,14 @@ export class CartRepository  implements ICartRepository {
          (cart_id, product_id, quantity, price, stock_available, subtotal, added_at, price_locked_until)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          cart.id,                    // Relación con el carrito
-          item.product_id,            // ID del producto
-          item.quantity,              // Cantidad de unidades
-          item.price,                 // Precio unitario
-          item.stock_available,       // Stock disponible en el momento
-          item.subtotal,              // Subtotal (price * quantity)
-          item.added_at,              // Fecha en que se agregó
-          item.price_locked_until,    // Fecha límite del precio congelado
+          cart.id,                    
+          item.product_id,          
+          item.quantity,              
+          item.price,                 
+          item.stock_available,      
+          item.subtotal,             
+          item.added_at,              
+          item.price_locked_until,    
         ]
       );
     }
