@@ -1,4 +1,4 @@
-// Middleware de Carrito
+
 // Lógica que se ejecuta antes de los controladores relacionados con el carrito
 import { CartService } from "../../application/cart.service";
 import { CartRepository } from "../repositories/cart.repository.msql";

@@ -66,7 +66,9 @@ export class CartRepository  implements ICartRepository {
       [cartRow.id]
     );
 
-    // Mapeamos las filas de la base de datos a objetos del dominio CartItem
+    
+ 
+    //Mapeamos las filas de la base de datos a objetos del dominio CartItem
     const items: CartItem[] = itemRows.map((r: RowDataPacket) => ({
       product_id: r.product_id,
       name: r.name,
