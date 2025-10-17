@@ -38,9 +38,13 @@ export class CartService {
     product: Omit<CartItem, "added_at" | "price_locked_until" | "subtotal">
   ) {
     // Validaciones iniciales
-    if (!product.product_id || typeof product.product_id !== "number") {
+    // Aceptar product_id como número o string numérico; convertir y validar entero > 0
+    const pid = Number((product as any).product_id);
+    if (!Number.isInteger(pid) || pid <= 0) {
       throw new Error("El ID del producto no es válido");
     }
+    // asignar el id convertido (por si vino como string)
+    (product as any).product_id = pid;
     if (product.quantity <= 0) {
       throw new Error("La cantidad debe ser mayor a 0");
     }

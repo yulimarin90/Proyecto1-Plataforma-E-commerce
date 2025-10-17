@@ -110,8 +110,17 @@ export class CartController {
   async removeItem(req: Request, res: Response) {
     try {
       const userId = Number(req.headers["x-user-id"]);
-      const { productId } = req.body;
-  const cart = await cartService.removeItem(userId, productId);
+      // Validar user
+      if (isNaN(userId)) return res.status(401).json({ error: 'Usuario no autenticado' });
+
+      // Aceptar productId desde params o body
+      const productIdParam = req.params.productId;
+      const productIdBody = (req.body && req.body.productId) ? req.body.productId : undefined;
+      const productId = Number(productIdParam ?? productIdBody);
+
+      if (isNaN(productId)) return res.status(400).json({ error: 'productId es requerido' });
+
+      const cart = await cartService.removeItem(userId, productId);
       res.status(200).json({ message: "Ítem eliminado", cart });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
@@ -121,7 +130,9 @@ export class CartController {
   async clearCart(req: Request, res: Response) {
     try {
       const userId = Number(req.headers["x-user-id"]);
-  await cartService.clearCart(userId);
+      if (isNaN(userId)) return res.status(401).json({ error: 'Usuario no autenticado' });
+
+      await cartService.clearCart(userId);
       res.status(204).send();
     } catch (e: any) {
       res.status(400).json({ error: e.message });
