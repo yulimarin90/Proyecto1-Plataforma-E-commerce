@@ -31,6 +31,9 @@ export const register = async (req: Request, res: Response) => {
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ message: 'Token faltante' });
+    }
     await userService.verifyEmail(token as string);
     res.status(200).json({ message: "Email verificado correctamente" });
   } catch (error: any) {
@@ -114,7 +117,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.id;
     await userService.deleteAccount(userId);
-    res.status(200).json({ message: "Cuenta eliminada correctamente" });
+    res.status(200).json({ message: "Usuario eliminado correctamente" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -126,8 +129,8 @@ export const logout = async (req: Request, res: Response) => {
     // Intentamos tomar token del header Authorization
     let token = req.headers.authorization?.split(" ")[1];
 
-    // Si no hay token en header, revisamos el body
-    if (!token) token = req.body.token;
+  // Si no hay token en header, revisamos el body (usar optional chaining)
+  if (!token) token = req.body?.token;
 
     if (!token) return res.status(400).json({ message: "Token faltante" });
 
