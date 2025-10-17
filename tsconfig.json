@@ -8,7 +8,7 @@
     "module": "CommonJS",
     "target": "ES2020",
     "lib": ["esnext"],
-    "types": ["node"],
+    "types": ["node","jest"],
 
     /* Outputs */
     "sourceMap": true,
@@ -24,14 +24,15 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
+    "moduleResolution": "node",
 
     /* Extras */
     "isolatedModules": true,
     "moduleDetection": "force",
 
-    /* 👇 AÑADE ESTO 👇 */
+   
     "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src"],
+  "include": ["src","**/*.test.ts"],
   "exclude": ["node_modules", "dist"]
 }

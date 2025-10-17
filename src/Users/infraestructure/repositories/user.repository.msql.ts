@@ -5,7 +5,7 @@ import { IUserRepository } from "../repositories/user.repository";
 
 export class MySQLUserRepository implements IUserRepository {
   async create(user: NewUser): Promise<number> {
-  console.log("👉 Usuario que llega al repositorio:", user);
+  console.log("Usuario que llega al repositorio:", user);
 
   const [result] = await db.query<ResultSetHeader>(
     `INSERT INTO users 

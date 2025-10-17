@@ -3,7 +3,12 @@ import { CategoriesService } from "../../application/categories.service";
 import { CategoriesRepository } from "../repositories/categories.repository";
 import { Category } from "../../domain/categories.entity";
 
-const categoriesService = new CategoriesService(new CategoriesRepository());
+let categoriesService = new CategoriesService(new CategoriesRepository());
+
+// Setter para pruebas: permite inyectar un mock desde los tests de integración
+export const setCategoriesService = (svc: any) => {
+  categoriesService = svc;
+};
 
 export const createCategory = async (req: Request, res: Response) => {
   try {

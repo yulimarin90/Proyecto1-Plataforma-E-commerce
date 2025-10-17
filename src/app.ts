@@ -21,7 +21,7 @@ app.use("/api", CheckoutRoutes);
 app.use("/api", CarttRoutes);
 // Endpoint raíz
 app.get("/", (req, res) => {
-  res.send("🚀 API funcionando");
+  res.send("API funcionando");
 });
 
 export default app;

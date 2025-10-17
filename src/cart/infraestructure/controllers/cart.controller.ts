@@ -3,16 +3,29 @@ import { CartService } from "../../application/cart.service";
 import { ProductsRepository } from "../../../Products/infraestructure/repositories/products.repository";
 import { CartRepository } from "../repositories/cart.repository.msql";
 
-// Instancias del servicio y repositorios
-const productRepository = new ProductsRepository();
-const repository = new CartRepository(productRepository);
-const service = new CartService(repository);
+// Instancias por defecto (se pueden inyectar en tests)
+let productRepository = new ProductsRepository();
+let repository = new CartRepository(productRepository);
+let cartService = new CartService(repository);
+
+// Setters para pruebas: permiten inyectar mocks desde los tests de integración
+export const setCartService = (svc: any) => {
+  cartService = svc;
+};
+export const setProductsRepository = (repo: any) => {
+  productRepository = repo;
+};
 
 export class CartController {
   async viewCart(req: Request, res: Response) {
     try {
       const userId = Number(req.headers["x-user-id"]);
-      const cart = await service.getCart(userId);
+      // Validar que haya un userId válido
+      if (isNaN(userId)) {
+        return res.status(401).json({ error: 'Usuario no autenticado' });
+      }
+
+      const cart = await cartService.getCart(userId);
       res.status(200).json(cart);
     } catch (e: any) {
       res.status(401).json({ error: e.message });
@@ -29,7 +42,7 @@ export class CartController {
         return res.status(400).json({ error: "productId y cantidad son requeridos" });
       }
 
-      const product = await productRepository.findById(Number(productId));
+  const product = await productRepository.findById(Number(productId));
       if (!product || !product.id) {
         return res.status(404).json({ error: "Producto no encontrado" });
       }
@@ -63,7 +76,7 @@ export class CartController {
         });
       }
 
-      const cart = await service.addItem(userId, productData);
+  const cart = await cartService.addItem(userId, productData);
       res.status(201).json({ message: "Producto agregado", cart });
 
     } catch (e: any) {
@@ -81,7 +94,7 @@ export class CartController {
       const product = await productRepository.findById(Number(item_id));
       if (!product) return res.status(404).json({ message: "Producto no encontrado" });
 
-      const cart = await service.updateQuantity(
+  const cart = await cartService.updateQuantity(
         userId,
         Number(item_id),
         quantity,
@@ -98,7 +111,7 @@ export class CartController {
     try {
       const userId = Number(req.headers["x-user-id"]);
       const { productId } = req.body;
-      const cart = await service.removeItem(userId, productId);
+  const cart = await cartService.removeItem(userId, productId);
       res.status(200).json({ message: "Ítem eliminado", cart });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
@@ -108,7 +121,7 @@ export class CartController {
   async clearCart(req: Request, res: Response) {
     try {
       const userId = Number(req.headers["x-user-id"]);
-      await service.clearCart(userId);
+  await cartService.clearCart(userId);
       res.status(204).send();
     } catch (e: any) {
       res.status(400).json({ error: e.message });

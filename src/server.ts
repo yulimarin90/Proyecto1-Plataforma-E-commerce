@@ -23,7 +23,7 @@ const socketAdapter = new SocketAdapter(io);
 socketAdapter.initialize();
 
 server.listen(PORT, () => {
-  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
 

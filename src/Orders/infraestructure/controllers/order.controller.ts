@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
 import { OrdersService } from "../../application/order.service";
 
-const ordersService = new OrdersService();
+let ordersService = new OrdersService();
+
+// Setter para pruebas: permite inyectar un mock desde los tests de integración
+export const setOrdersService = (svc: any) => {
+  ordersService = svc;
+};
 
 
 const parseBoolToNumber = (value: any, defaultValue: number = 1) => {

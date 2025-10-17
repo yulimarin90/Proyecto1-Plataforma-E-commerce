@@ -4,7 +4,12 @@ import { ProductsRepository } from "../repositories/products.repository";
 import { Product } from "../../domain/products.entity"; // ajusta la ruta según tu proyecto
 
 
-const productsService = new ProductsService(new ProductsRepository());
+let productsService = new ProductsService(new ProductsRepository());
+
+// Setter para pruebas: permite inyectar un mock desde los tests de integración
+export const setProductsService = (svc: any) => {
+  productsService = svc;
+};
 type ProductResponse = Product & { price_formatted: string };
 
 
