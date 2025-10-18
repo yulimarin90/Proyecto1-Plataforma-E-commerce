@@ -211,9 +211,6 @@
 <a name='L146'></a><a href='#L146'>146</a>
 <a name='L147'></a><a href='#L147'>147</a>
 <a name='L148'></a><a href='#L148'>148</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -279,16 +276,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -297,12 +284,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -320,6 +301,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -357,10 +356,8 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Repositorio MySQL para la entidad Cart
-// Implementa la interfaz CartRepository y gestiona todas las operaciones del carrito
-// Se conecta directamente con la base de datos MySQL usando el pool definido en config/db.ts
-&nbsp;
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&nbsp;
 import db from "../../../config/db";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { Cart, CartItem } from "../../domain/cart.entity";
@@ -425,7 +422,9 @@ export class CartRepository  implements ICartRepository {
       [cartRow.id]
     );
 &nbsp;
-    // Mapeamos las filas de la base de datos a objetos del dominio CartItem
+    
+ 
+    //Mapeamos las filas de la base de datos a objetos del dominio CartItem
     const items: CartItem[] = <span class="cstat-no" title="statement not covered" >itemRows.map(<span class="fstat-no" title="function not covered" >(r</span>: RowDataPacket) =&gt; (<span class="cstat-no" title="statement not covered" >{</span></span>
       product_id: r.product_id,
       name: r.name,
@@ -479,14 +478,14 @@ export class CartRepository  implements ICartRepository {
          (cart_id, product_id, quantity, price, stock_available, subtotal, added_at, price_locked_until)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          cart.id,                    // Relación con el carrito
-          item.product_id,            // ID del producto
-          item.quantity,              // Cantidad de unidades
-          item.price,                 // Precio unitario
-          item.stock_available,       // Stock disponible en el momento
-          item.subtotal,              // Subtotal (price * quantity)
-          item.added_at,              // Fecha en que se agregó
-          item.price_locked_until,    // Fecha límite del precio congelado
+          cart.id,                    
+          item.product_id,          
+          item.quantity,              
+          item.price,                 
+          item.stock_available,      
+          item.subtotal,             
+          item.added_at,              
+          item.price_locked_until,    
         ]
       );
     }
@@ -504,14 +503,15 @@ export class CartRepository  implements ICartRepository {
 <span class="cstat-no" title="statement not covered" >    await db.query("DELETE FROM carts WHERE user_id = ?", [userId]);</span>
   }
 &nbsp;
-}</pre></td></tr></table></pre>
+}
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-17T02:36:48.054Z
+                at 2025-10-18T00:04:14.573Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>

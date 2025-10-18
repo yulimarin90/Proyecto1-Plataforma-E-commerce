@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">44% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/25</span>
+                <span class='fraction'>25/25</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">25% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">42.85% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/7</span>
+                <span class='fraction'>7/7</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">45% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/20</span>
+                <span class='fraction'>20/20</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -121,7 +121,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">12x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -134,7 +134,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -146,29 +146,29 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { ProductsRepository, IProductsRepository } from "../infraestructure/repositories/products.repository";
@@ -187,8 +187,8 @@ export class ProductsService {
   }
 &nbsp;
   // Obtener todos los productos
-<span class="fstat-no" title="function not covered" >  async </span>getAllProducts() {
-<span class="cstat-no" title="statement not covered" >    return await this.productsRepository.findAll();</span>
+  async getAllProducts() {
+    return await this.productsRepository.findAll();
   }
 &nbsp;
   // Obtener producto por ID
@@ -199,30 +199,30 @@ export class ProductsService {
   }
 &nbsp;
   // Actualizar producto
-<span class="fstat-no" title="function not covered" >  async </span>updateProduct(id: number, data: Partial&lt;Product&gt;) {
-    const product = <span class="cstat-no" title="statement not covered" >await this.productsRepository.findById(id);</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!product) <span class="cstat-no" title="statement not covered" >throw { status: 404, message: "Producto no encontrado" };</span></span>
+  async updateProduct(id: number, data: Partial&lt;Product&gt;) {
+    const product = await this.productsRepository.findById(id);
+    if (!product) throw { status: 404, message: "Producto no encontrado" };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (data.name &amp;&amp; data.name !== product.name) {</span>
-      const exists = <span class="cstat-no" title="statement not covered" >await this.productsRepository.findByNombre(data.name);</span>
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (exists) <span class="cstat-no" title="statement not covered" >throw { status: 409, message: "Nombre de producto ya en uso" };</span></span>
+    if (data.name &amp;&amp; data.name !== product.name) {
+      const exists = await this.productsRepository.findByNombre(data.name);
+      if (exists) throw { status: 409, message: "Nombre de producto ya en uso" };
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return await this.productsRepository.update(id, { ...product, ...data });</span>
+    return await this.productsRepository.update(id, { ...product, ...data });
   }
 &nbsp;
   // Eliminar producto
-<span class="fstat-no" title="function not covered" >  async </span>deleteProduct(id: number): Promise&lt;void&gt; {
-    const product = <span class="cstat-no" title="statement not covered" >await this.productsRepository.findById(id);</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!product) <span class="cstat-no" title="statement not covered" >throw { status: 404, message: "Producto no encontrado" };</span></span>
+  async deleteProduct(id: number): Promise&lt;void&gt; {
+    const product = await this.productsRepository.findById(id);
+    if (!product) throw { status: 404, message: "Producto no encontrado" };
 &nbsp;
     // Aquí podrías validar si hay órdenes asociadas
-<span class="cstat-no" title="statement not covered" >    await this.productsRepository.delete(id);</span>
+    await this.productsRepository.delete(id);
   }
 &nbsp;
   // Obtener productos por categoría
-<span class="fstat-no" title="function not covered" >  async </span>getProductsByCategory(categoryId: number) {
-<span class="cstat-no" title="statement not covered" >    return await this.productsRepository.findByCategory(categoryId);</span>
+  async getProductsByCategory(categoryId: number) {
+    return await this.productsRepository.findByCategory(categoryId);
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -232,7 +232,7 @@ export class ProductsService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-17T02:36:48.054Z
+                at 2025-10-18T00:04:14.573Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
