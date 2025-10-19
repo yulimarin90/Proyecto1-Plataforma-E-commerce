@@ -50,6 +50,12 @@ export async function validateStockMiddleware(req: Request, res: Response, next:
   }
 
   for (const p of products) {
+    if (p.quantity <= 0) {
+      return res.status(400).json({
+        code: 400,
+        message: `Cantidad inválida para el producto con id ${p.id}`
+      });
+    }
     const [rows]: any = await db.query(
       `SELECT stock FROM products WHERE id = ? AND is_active = 1`,
       [p.id]

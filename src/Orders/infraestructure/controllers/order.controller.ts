@@ -18,9 +18,12 @@ const parseBoolToNumber = (value: any, defaultValue: number = 1) => {
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const payload = req.body;
-    const order = await ordersService.createOrder(payload);
+    const payload = {
+      ...req.body,
+      userEmail: (req as any).user?.email //si el email viene del token
+    };
 
+    const order = await ordersService.createOrder(payload);
     res.status(201).json({
       code: 201,
       message: "Orden creada exitosamente",

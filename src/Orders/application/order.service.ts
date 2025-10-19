@@ -1,4 +1,5 @@
 import { OrdersRepository } from "../infraestructure/repositories/order.repository";
+import { sendOrderConfirmationEmail } from "../utils/email.service";
 
 export class OrdersService {
   private repo: OrdersRepository;
@@ -18,26 +19,37 @@ export class OrdersService {
     if (!orderData.userId || !orderData.products?.length) {
       throw { status: 400, message: "Datos incompletos" };
     }
-
+     
       // Calcular el total
-  const totalAmount = orderData.products.reduce((acc: number, product: any) => {
+    const totalAmount = orderData.products.reduce((acc: number, product: any) => {
     const subtotal = product.price * product.quantity;
     return acc + subtotal;
   }, 0);
 
+  //preparar datos para la creación de la orden
   orderData.order_number = this.generateOrderNumber();
   orderData.status = "PENDIENTE";
   orderData.total_amount = totalAmount.toFixed(2); 
-
-  
   orderData.products = orderData.products.map((p: any) => ({
-  product_id: p.id,  
-  price: p.price,
-  quantity: p.quantity,
-  subtotal: (p.price * p.quantity).toFixed(2)
+    product_id: p.id,  
+    price: p.price,
+    quantity: p.quantity,
+    subtotal: (p.price * p.quantity).toFixed(2)
   }));
 
-  return await this.repo.createOrder(orderData)
+  // Asegurar que shipping_method y notes estén presentes aunque sean opcionales
+  orderData.shipping_method = orderData.shipping_method || null;
+  orderData.notes = orderData.notes || null;
+
+  // Crear orden en la base de datos
+  const order = await this.repo.createOrder(orderData);
+
+  // Enviar email de confirmación
+  const userEmail = orderData.userEmail || "cliente@ejemplo.com"; //se puede ajustar
+  await sendOrderConfirmationEmail(userEmail, orderData.order_number);
+
+  return order;
+
   }
   
   async getOrdersByUser(userId: number) {

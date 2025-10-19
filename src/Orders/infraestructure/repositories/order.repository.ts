@@ -17,15 +17,17 @@ export class OrdersRepository {
     
     const [result]: any = await db.query(
       `INSERT INTO orders 
-        (order_number, user_id, total_amount, status, shipping_address, payment_method, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        (order_number, user_id, total_amount, status, shipping_address, shipping_method, payment_method, notes, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
       [
-        orderData.order_number,
-        orderData.userId,
-        orderData.total_amount,
-        orderData.status,
-        orderData.shipping_address,
-        orderData.payment_method
+          orderData.order_number,
+          orderData.userId,
+          orderData.total_amount,
+          orderData.status,
+          orderData.shipping_address,
+          orderData.shipping_method || null,
+          orderData.payment_method,
+          orderData.notes || null
       ]
     );
 
