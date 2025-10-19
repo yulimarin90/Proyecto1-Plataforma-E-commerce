@@ -18,63 +18,54 @@ import { TrackingRepository } from "../infraestructure/repositories/tracking.rep
 const trackingService = new TrackingService(new TrackingRepository());
 const router = Router();
 
-// Configuración de WebSocket para notificaciones en tiempo real
+// WebSocket para notificaciones en tiempo real
 export const initializeTrackingSocket = (io: SocketIOServer) => {
   io.on('connection', (socket) => {
     console.log('Cliente conectado al sistema de tracking:', socket.id);
 
-    // Unirse a sala de tracking específico
     socket.on('join_tracking', (trackingId: number) => {
       socket.join(`tracking_${trackingId}`);
       console.log(`Cliente ${socket.id} se unió a la sala del tracking ${trackingId}`);
     });
 
-    // Unirse a sala de orden específica
     socket.on('join_order', (orderId: number) => {
       socket.join(`order_${orderId}`);
       console.log(`Cliente ${socket.id} se unió a la sala de la orden ${orderId}`);
     });
 
-    // Solicitar actualización de tracking
     socket.on('request_tracking_update', async (data: { trackingId: number }) => {
       try {
-        // Estado actual del tracking
-         const tracking = await trackingService.getTrackingById(data.trackingId);
-         socket.emit('tracking_current_status', tracking);
+        const tracking = await trackingService.getTrackingById(data.trackingId);
+        socket.emit('tracking_current_status', tracking);
       } catch (error) {
         socket.emit('error', { message: 'Error al obtener estado del tracking' });
       }
     });
 
-    // Desconexión
     socket.on('disconnect', () => {
       console.log('Cliente desconectado del sistema de tracking:', socket.id);
     });
   });
 
-  
   setInterval(async () => {
     try {
-      // Se emiten actualizaciones de trackings activos
-       const activeTrackings = await trackingService.getActiveTrackings();
-       io.emit('active_trackings_update', activeTrackings);
+      const activeTrackings = await trackingService.getActiveTrackings();
+      io.emit('active_trackings_update', activeTrackings);
     } catch (error) {
       console.error('Error en actualización periódica de trackings:', error);
     }
-  }, 30000); // Para cada 30 segundos
+  }, 30000);
 };
 
-// Rutas públicas (no requieren autenticación)
+// Rutas públicas (requieren autenticación para validar propiedad)
+router.get("/trackings", authMiddleware, validateQueryParams, TrackingController.getTrackings);
+router.get("/trackings/:id", authMiddleware, trackingExistsMiddleware, TrackingController.getTrackingById);
+router.get("/trackings/number/:tracking_number", authMiddleware, trackingByNumberExistsMiddleware, TrackingController.getTrackingByNumber);
+router.get("/orders/:order_id/tracking", authMiddleware, TrackingController.getTrackingByOrder);
+router.get("/trackings/active", authMiddleware, TrackingController.getActiveTrackings);
+router.get("/trackings/status/:status", authMiddleware, TrackingController.getTrackingsByStatus);
 
-router.get("/trackings", validateQueryParams, TrackingController.getTrackings);
-router.get("/trackings/:id", trackingExistsMiddleware, TrackingController.getTrackingById);
-router.get("/trackings/number/:tracking_number", trackingByNumberExistsMiddleware, TrackingController.getTrackingByNumber);
-router.get("/orders/:order_id/tracking", TrackingController.getTrackingByOrder);
-router.get("/trackings/active", TrackingController.getActiveTrackings);
-router.get("/trackings/status/:status", TrackingController.getTrackingsByStatus);
-
-
-// Rutas protegidas (requieren autenticación de administrador)
+// Rutas protegidas (modificación de datos)
 router.post(
   "/admin/trackings",
   authMiddleware,
@@ -108,6 +99,7 @@ router.delete(
   TrackingController.deleteTracking
 );
 
+// Ruta de salud del servicio
 router.get("/trackings/health", (req, res) => {
   res.status(200).json({
     status: "OK",

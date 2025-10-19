@@ -9,6 +9,9 @@ export interface TrackingRequest extends Request {
   tracking?: any;
 }
 
+// Estados válidos según reglas de negocio
+const validStatuses = ['pending', 'preparing', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
+
 // Middleware principal para validar que el tracking exista
 export const trackingExistsMiddleware = async (req: TrackingRequest, res: Response, next: NextFunction) => {
   const id = Number(req.params.id || req.params.tracking_id);
@@ -53,9 +56,9 @@ export const validateCreateTracking = (req: Request, res: Response, next: NextFu
     return res.status(400).json({ message: "Número de tracking inválido o requerido (mínimo 3 caracteres)" });
   }
 
-  if (!status || !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status)) {
+  if (!status || !validStatuses.includes(status)) {
     return res.status(400).json({ 
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
+      message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` 
     });
   }
 
@@ -74,10 +77,9 @@ export const validateCreateTracking = (req: Request, res: Response, next: NextFu
 export const validateUpdateTracking = (req: Request, res: Response, next: NextFunction) => {
   const { status, current_location, carrier_name } = req.body;
 
-  if (status && !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status)) {
+  if (status && !validStatuses.includes(status)) {
     return res.status(400).json({ 
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
-    });
+      message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` });
   }
 
   if (current_location && current_location.trim().length < 2) {
@@ -103,10 +105,8 @@ export const validateUpdateTracking = (req: Request, res: Response, next: NextFu
 export const validateUpdateStatus = (req: Request, res: Response, next: NextFunction) => {
   const { status, location } = req.body;
 
-  if (!status || !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status)) {
-    return res.status(400).json({ 
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
-    });
+  if (!status || !validStatuses.includes(status)) {
+    return res.status(400).json({ message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` });
   }
 
   if (!location || location.trim().length < 2) {
@@ -162,10 +162,8 @@ export const validateDeleteTracking = async (req: TrackingRequest, res: Response
 export const validateQueryParams = (req: Request, res: Response, next: NextFunction) => {
   const { status, page, limit } = req.query;
 
-  if (status && !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status as string)) {
-    return res.status(400).json({ 
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
-    });
+   if (status && !validStatuses.includes(status as string)) {
+    return res.status(400).json({ message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` });
   }
 
   if (page && (isNaN(Number(page)) || Number(page) < 1)) {

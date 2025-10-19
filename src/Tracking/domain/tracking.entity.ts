@@ -1,8 +1,9 @@
 export interface Tracking {
+  user_id: number;
   id?: number;
   order_id: number;
   tracking_number: string;
-  status: 'pending' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned';
+  status: 'pending' | 'preparing' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned';
   current_location: string;
   estimated_delivery_date?: Date;
   actual_delivery_date?: Date;
@@ -31,4 +32,6 @@ export interface TrackingNotification {
   timestamp: Date;
   recipient_email?: string;
   recipient_phone?: string;
+  channel?: 'EMAIL' | 'WEB' | 'PUSH'; // agregado para compatibilidad con tabla
+  status_db?: 'SENT' | 'FAILED' | 'PENDING'; // agregado para compatibilidad con tabla
 }

@@ -110,7 +110,7 @@ export const setupTrackingSocket = (io: SocketIOServer) => {
 
     // Suscribirse a notificaciones de un estado específico
     socket.on('subscribe_status', (data: { status: string }) => {
-      const validStatuses = ['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
+      const validStatuses = ['pending', 'preparing', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];
       if (validStatuses.includes(data.status)) {
         socket.join(`status_${data.status}`);
         console.log(`Cliente ${socket.id} se suscribió a notificaciones de estado: ${data.status}`);
