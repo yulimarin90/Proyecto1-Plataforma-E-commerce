@@ -1,6 +1,7 @@
 import { TrackingRepository, ITrackingRepository } from "../infraestructure/repositories/tracking.repository";
 import { Tracking, TrackingNotification } from "../domain/tracking.entity";
 import db from "../../config/db";
+import { RowDataPacket } from "mysql2/promise";
 
 export class TrackingService {
   constructor(private trackingRepository: ITrackingRepository) {}
@@ -60,6 +61,7 @@ export class TrackingService {
     const tracking = await this.trackingRepository.findById(id);
     if (!tracking) throw { status: 404, message: "Tracking no encontrado" };
 
+    // Validar duración máxima en estado PREPARING
     if (tracking.status === 'preparing') {
       const createdAt = new Date(tracking.created_at!);
       const now = new Date();
@@ -73,8 +75,15 @@ export class TrackingService {
       throw { status: 400, message: `Transición de estado inválida: de ${tracking.status} a ${status}` };
     }
 
+    // Actualizar tracking
     const updatedTracking = await this.trackingRepository.updateStatus(id, status, location, notes);
 
+    // Obtener user_id desde la orden asociada con tipado correcto
+      type OrderRow = RowDataPacket & { user_id: number };
+      const [orderRows] = await db.query<OrderRow[]>(`SELECT user_id FROM orders WHERE id = ?`, [tracking.order_id]);
+      const userId = orderRows[0]?.user_id;
+
+    // Crear notificación
     const notification: TrackingNotification = {
       tracking_id: id,
       order_id: tracking.order_id,
@@ -84,16 +93,46 @@ export class TrackingService {
       timestamp: new Date(),
     };
 
-    const [orderRows] = await db.query(`SELECT user_id FROM orders WHERE id = ?`, [tracking.order_id]) as [any[], any];
-    const userId = orderRows?.[0]?.user_id ?? null;
+    // Insertar notificación en la base de datos
+  await db.query(`
+    INSERT INTO notifications (user_id, order_id, type, channel, message, status)
+    VALUES (?, ?, 'SHIPMENT', 'WEB', ?, 'SENT')
+  `, [userId, tracking.order_id, notification.message]);
 
-    await db.query(`
-      INSERT INTO notifications (user_id, order_id, type, channel, message, status)
-      VALUES (?, ?, 'SHIPMENT', 'WEB', ?, 'SENT')
-    `, [userId, tracking.order_id, notification.message]);
-
-    return { tracking: updatedTracking, notification };
+  // Sincronizar estado de la orden si el tracking fue entregado
+  if (status === 'delivered') {
+    await db.query(`UPDATE orders SET status = 'delivered', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [tracking.order_id]);
   }
+
+  // Emitir eventos WebSocket desde el servicio (si el socket esté disponible)
+  const io = (globalThis as any).io; // Asegúrate de que el socket esté accesible globalmente
+  if (io) {
+    io.to(`order_${tracking.order_id}`).emit('order_tracking_update', {
+      tracking: updatedTracking,
+      notification
+    });
+
+    if (status === 'delivered') {
+      io.to(`order_${tracking.order_id}`).emit('order_delivered', {
+        orderId: tracking.order_id,
+        trackingId: tracking.id,
+        message: 'La orden ha sido entregada',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (status === 'cancelled') {
+      io.to(`order_${tracking.order_id}`).emit('order_cancelled', {
+        orderId: tracking.order_id,
+        trackingId: tracking.id,
+        message: 'La orden ha sido cancelada',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+
+  return { tracking: updatedTracking, notification };
+}  
 
   async getActiveTrackings() {
     return await this.trackingRepository.getActiveTrackings();
