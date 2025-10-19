@@ -9,7 +9,7 @@ export class UserService {
 
  
   private readonly MAX_FAILED_ATTEMPTS = 3;
-  private readonly LOCK_TIME_MINUTES = 15;
+  private readonly LOCK_TIME_MINUTES = 1;
 
   //Registro
   async register(data: Omit<User, "id">) {
@@ -23,6 +23,7 @@ export class UserService {
 
     const id = await this.userRepository.create({
       ...data,
+      role: data.role || "user",
       password: hashedPassword,
       verification_token: verificationToken,
       verification_expires: verificationExpires,
@@ -116,6 +117,7 @@ export class UserService {
     await this.userRepository.update(user.id!, {
       verification_token: null,
       verification_expires: null,
+      is_verified: true
     });
 
     return { id: user.id, email: user.email };

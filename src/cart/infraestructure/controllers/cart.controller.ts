@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+  import { Request, Response } from "express";
 import { CartService } from "../../application/cart.service";
 import { ProductsRepository } from "../../../Products/infraestructure/repositories/products.repository";
 import { CartRepository } from "../repositories/cart.repository.msql";
@@ -34,7 +34,7 @@ export class CartController {
 
   async addItem(req: Request, res: Response) {
     try {
-         const userId = Number(req.body.user_id || req.params.user_id);
+      const userId = Number(req.body.user_id || req.params.user_id || req.headers["x-user-id"]);
       const { productId, cantidad } = req.body;
 
       // Validar datos de entrada
@@ -42,7 +42,7 @@ export class CartController {
         return res.status(400).json({ error: "productId y cantidad son requeridos" });
       }
 
-  const product = await productRepository.findById(Number(productId));
+      const product = await productRepository.findById(Number(productId));
       if (!product || !product.id) {
         return res.status(404).json({ error: "Producto no encontrado" });
       }
@@ -75,12 +75,16 @@ export class CartController {
           error: "Datos inválidos en el producto. Revisa los valores enviados o en la BD.",
         });
       }
+      //Verificar expiración antes de agregar
+      const cart = await cartService.getCart(userId);
+    const now = new Date();
+    if (cart.expires_at && now > cart.expires_at) {
+      return res.status(410).json({ message: "El carrito ha expirado por inactividad" });
+    }
 
-  const cart = await cartService.addItem(userId, productData);
-      res.status(201).json({ message: "Producto agregado", cart });
-
+    const updatedCart = await cartService.addItem(userId, productData);
+    res.status(201).json({ message: "Producto agregado", cart: updatedCart });
     } catch (e: any) {
-      console.error("Error en addItem:", e);
       res.status(400).json({ error: e.message });
     }
   }

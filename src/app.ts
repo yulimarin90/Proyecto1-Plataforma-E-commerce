@@ -7,7 +7,7 @@ import categoriesRoutes from "./Categories/routes/categories.route"
 import SuppliersRoutes from "./Supplier/routes/supplier.routes"
 import OrdersRoutes from "./Orders/routes/order.route"
 import CheckoutRoutes from "./Checkout/routes/checkout.route"
-//import CarttRoutes from "./cart/routes/cart.route"
+import CartRoutes from "./cart/routes/cart.route"
 import TrackingRoutes from "./Tracking/routes/tracking.route"
 const app = express();
 
@@ -20,7 +20,7 @@ app.use("/api", categoriesRoutes);
 app.use("/api", SuppliersRoutes);
 app.use("/api", OrdersRoutes);
 app.use("/api", CheckoutRoutes);
-//app.use("/api", CarttRoutes);
+app.use("/api", CartRoutes);
 app.use("/api", TrackingRoutes);
 // Endpoint raíz
 app.get("/", (req, res) => {

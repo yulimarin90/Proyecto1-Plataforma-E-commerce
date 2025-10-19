@@ -60,6 +60,7 @@ export const validateRegister = (req: Request, res: Response, next: NextFunction
 
   //contraseña segura
   const strongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
   if (!strongPassword.test(password)) {
     return res.status(400).json({
       message:
@@ -120,24 +121,26 @@ export const validateEditProfile = (req: Request, res: Response, next: NextFunct
 
 export const requireVerifiedEmail = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user?.id;
-    if (!userId) {
-      return res.status(401).json({ message: "Usuario no autenticado" });
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "El email es obligatorio" });
     }
 
-    const user = await userRepo.findById(userId);
+    const user = await userRepo.findByEmail(email);
     if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
     if (!user.is_verified) {
       return res.status(403).json({
-        message: "Debes verificar tu email antes de realizar esta acción",
+        message: "Debes verificar tu correo electrónico antes de iniciar sesión",
       });
     }
 
     next();
   } catch (error) {
+    console.error("Error en requireVerifiedEmail:", error);
     return res.status(500).json({ message: "Error verificando el email del usuario" });
   }
 };

@@ -8,6 +8,7 @@ export interface NewUser {
   address: string;
   verification_token?: string | null;
   verification_expires?: Date | null;
+  role?: "admin" | "user"; 
 }
 
 // Para usuarios que ya existen 

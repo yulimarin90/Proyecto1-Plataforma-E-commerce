@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">45.83% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/24</span>
+                <span class='fraction'>24/24</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">25% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">47.36% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/19</span>
+                <span class='fraction'>19/19</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -107,7 +107,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
@@ -117,7 +117,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -127,21 +127,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { ISuppliersRepository, SuppliersRepository } from "../infraestructure/repositories/supplier.repository";
 import { Supplier } from "../domain/supplier.entity";
@@ -156,8 +156,8 @@ export class SuppliersService {
     return await this.suppliersRepository.findById(id);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getAllSuppliers() {
-<span class="cstat-no" title="statement not covered" >    return await this.suppliersRepository.findAll();</span>
+  async getAllSuppliers() {
+    return await this.suppliersRepository.findAll();
   }
 &nbsp;
   async getSupplierById(id: number) {
@@ -166,22 +166,22 @@ export class SuppliersService {
     return supplier;
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>updateSupplier(id: number, data: Partial&lt;Supplier&gt;) {
-    const supplier = <span class="cstat-no" title="statement not covered" >await this.suppliersRepository.findById(id);</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!supplier) <span class="cstat-no" title="statement not covered" >throw { status: 404, message: "Proveedor no encontrado" };</span></span>
+  async updateSupplier(id: number, data: Partial&lt;Supplier&gt;) {
+    const supplier = await this.suppliersRepository.findById(id);
+    if (!supplier) throw { status: 404, message: "Proveedor no encontrado" };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (data.name &amp;&amp; data.name !== supplier.name) {</span>
-      const exists = <span class="cstat-no" title="statement not covered" >await this.suppliersRepository.findByName(data.name);</span>
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (exists) <span class="cstat-no" title="statement not covered" >throw { status: 409, message: "Nombre de proveedor ya en uso" };</span></span>
+    if (data.name &amp;&amp; data.name !== supplier.name) {
+      const exists = await this.suppliersRepository.findByName(data.name);
+      if (exists) throw { status: 409, message: "Nombre de proveedor ya en uso" };
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return await this.suppliersRepository.update(id, { ...supplier, ...data });</span>
+    return await this.suppliersRepository.update(id, { ...supplier, ...data });
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>deleteSupplier(id: number) {
-    const supplier = <span class="cstat-no" title="statement not covered" >await this.suppliersRepository.findById(id);</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!supplier) <span class="cstat-no" title="statement not covered" >throw { status: 404, message: "Proveedor no encontrado" };</span></span>
-<span class="cstat-no" title="statement not covered" >    await this.suppliersRepository.delete(id);</span>
+  async deleteSupplier(id: number) {
+    const supplier = await this.suppliersRepository.findById(id);
+    if (!supplier) throw { status: 404, message: "Proveedor no encontrado" };
+    await this.suppliersRepository.delete(id);
   }
 }</pre></td></tr></table></pre>
 
@@ -190,7 +190,7 @@ export class SuppliersService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-18T00:04:14.573Z
+                at 2025-10-18T00:18:34.038Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

@@ -31,11 +31,20 @@ export const register = async (req: Request, res: Response) => {
 export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { token } = req.query;
+
     if (!token) {
-      return res.status(400).json({ message: 'Token faltante' });
+      return res.status(400).json({ message: "Token faltante" });
     }
-    await userService.verifyEmail(token as string);
-    res.status(200).json({ message: "Email verificado correctamente" });
+
+    // Verifica el token y actualiza is_verified a 1
+    const result = await userService.verifyEmail(token as string);
+
+    res.status(200).json({
+      message: "Email verificado correctamente",
+      userId: result.id,
+      email: result.email,
+      is_verified: true
+    });
   } catch (error: any) {
     res.status(error.status || 400).json({ message: error.message });
   }
@@ -55,6 +64,7 @@ export const login = async (req: Request, res: Response) => {
     return res.status(error.status || 400).json({ message: error.message });
   }
 };
+
 
 
 //Refresh token

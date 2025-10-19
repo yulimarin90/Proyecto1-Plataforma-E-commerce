@@ -3,10 +3,9 @@ import jwt from "jsonwebtoken";
 export class AuthService {
   // Generar Token (corto plazo)
   static generateAccessToken(payload: object): string {
-    console.log("JWT_SECRET:", process.env.JWT_SECRET);
-    console.log("JWT_REFRESH_SECRET:", process.env.JWT_REFRESH_SECRET);
 
-    return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "360m" });
+
+    return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "300m" });
   }
 
   //Generar Refresh Token (largo plazo)

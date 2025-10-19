@@ -51,4 +51,9 @@ export class ProductsService {
   async getProductsByCategory(categoryId: number) {
     return await this.productsRepository.findByCategory(categoryId);
   }
+
+  //paginacion
+  async getFilteredProducts(page: number, limit: number, search?: string) {
+  return await this.productsRepository.findFiltered(page, limit, search);
+}
 }

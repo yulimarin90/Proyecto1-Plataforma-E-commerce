@@ -20,17 +20,26 @@ export const createProduct = async (req: Request, res: Response) => {
 
     
     if (req.file) payload.image_url = req.file.path;
+    
 
     // convertir cualquier valor a 0 o 1
     const parseBoolToNumber = (value: any, defaultValue: number): number => {
-      if (value === undefined || value === null) return defaultValue;
-      if (value === true || value === "true" || value === "1" || value === 1) return 1;
-      return 0;
-    };
+  if (value === undefined || value === null) return defaultValue;
+
+  
+  const normalized = String(value).trim().toLowerCase();
+
+  if (normalized === "true" || normalized === "1" || normalized === "yes") return 1;
+  if (normalized === "false" || normalized === "0" || normalized === "no") return 0;
+
+  return defaultValue;
+};
+
 
     // Convertir booleanos a número
     payload.is_active = parseBoolToNumber(payload.is_active, 1);
-    payload.is_discontinued = parseBoolToNumber(payload.is_discontinued, 0);
+payload.is_discontinued = parseBoolToNumber(payload.is_discontinued, 0);
+
 
     
     const result = await productsService.createProduct(payload);
@@ -191,3 +200,42 @@ export const getProductsByCategory = async (req: Request, res: Response) => {
     res.status(error.status || 500).json({ message: error.message });
   }
 };
+  //paginacion
+  export const getProductCatalog = async (req: Request, res: Response) => {
+  try {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 12;
+
+    const search = req.query.search ? String(req.query.search).trim() : undefined;
+    console.log("BUSCANDO:", search);
+
+    const { products, total } = await productsService.getFilteredProducts(page, limit, search);
+
+    // Formatear precio
+    const currency = "USD";
+    const formatted = products.map((p) => ({
+      ...p,
+      price_formatted: new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(p.price)),
+    }));
+
+    res.status(200).json({
+      data: formatted,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error: any) {
+    
+    console.error("Error al obtener catálogo:", error);
+    res.status(500).json({ message: error.message || "Error al obtener productos" });
+    }
+};
+

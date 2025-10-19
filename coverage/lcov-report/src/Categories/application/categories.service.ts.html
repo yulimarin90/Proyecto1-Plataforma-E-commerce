@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">45.83% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/24</span>
+                <span class='fraction'>24/24</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">25% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/8</span>
+                <span class='fraction'>8/8</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">50% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/6</span>
+                <span class='fraction'>6/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">47.36% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>9/19</span>
+                <span class='fraction'>19/19</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -108,7 +108,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
@@ -118,7 +118,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -128,21 +128,21 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { ICategoriesRepository, CategoriesRepository } from "../infraestructure/repositories/categories.repository";
@@ -158,8 +158,8 @@ export class CategoriesService {
     return await this.categoriesRepository.findById(id);
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>getAllCategories() {
-<span class="cstat-no" title="statement not covered" >    return await this.categoriesRepository.findAll();</span>
+  async getAllCategories() {
+    return await this.categoriesRepository.findAll();
   }
 &nbsp;
   async getCategoryById(id: number) {
@@ -168,22 +168,22 @@ export class CategoriesService {
     return category;
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>updateCategory(id: number, data: Partial&lt;Category&gt;) {
-    const category = <span class="cstat-no" title="statement not covered" >await this.categoriesRepository.findById(id);</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!category) <span class="cstat-no" title="statement not covered" >throw { status: 404, message: "Categoría no encontrada" };</span></span>
+  async updateCategory(id: number, data: Partial&lt;Category&gt;) {
+    const category = await this.categoriesRepository.findById(id);
+    if (!category) throw { status: 404, message: "Categoría no encontrada" };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (data.name &amp;&amp; data.name !== category.name) {</span>
-      const exists = <span class="cstat-no" title="statement not covered" >await this.categoriesRepository.findByName(data.name);</span>
-<span class="cstat-no" title="statement not covered" >      <span class="missing-if-branch" title="if path not taken" >I</span>if (exists) <span class="cstat-no" title="statement not covered" >throw { status: 409, message: "Nombre de categoría ya en uso" };</span></span>
+    if (data.name &amp;&amp; data.name !== category.name) {
+      const exists = await this.categoriesRepository.findByName(data.name);
+      if (exists) throw { status: 409, message: "Nombre de categoría ya en uso" };
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    return await this.categoriesRepository.update(id, { ...category, ...data });</span>
+    return await this.categoriesRepository.update(id, { ...category, ...data });
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  async </span>deleteCategory(id: number) {
-    const category = <span class="cstat-no" title="statement not covered" >await this.categoriesRepository.findById(id);</span>
-<span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if (!category) <span class="cstat-no" title="statement not covered" >throw { status: 404, message: "Categoría no encontrada" };</span></span>
-<span class="cstat-no" title="statement not covered" >    await this.categoriesRepository.delete(id);</span>
+  async deleteCategory(id: number) {
+    const category = await this.categoriesRepository.findById(id);
+    if (!category) throw { status: 404, message: "Categoría no encontrada" };
+    await this.categoriesRepository.delete(id);
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -193,7 +193,7 @@ export class CategoriesService {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-18T00:04:14.573Z
+                at 2025-10-18T00:18:34.038Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

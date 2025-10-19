@@ -12,12 +12,15 @@ import {
 const router = Router();
 const upload = multer({ dest: "uploads/" });
 
-// Rutas públicas
-router.get("/products", ProductController.getProducts);               
-router.get("/products/:id", productExistsMiddleware, ProductController.getProductById); 
-router.get("/categories/:id", ProductController.getProductsByCategory);  
+// Rutas visualizacion admin
+router.get("/admin/products", authMiddleware, ProductController.getProducts);               
+router.get("/admin/products/:id", authMiddleware, productExistsMiddleware, ProductController.getProductById); 
+router.get("/admin/categories/:id", authMiddleware, ProductController.getProductsByCategory); 
+//ruta rol user
+router.get("/catalog", ProductController.getProductCatalog);
 
-// Rutas protegidas
+
+// Rutas Crud
 router.post(
   "/admin/products",
   authMiddleware,

@@ -9,6 +9,7 @@ export interface IProductsRepository {
   update(id: number, product: Partial<Product>): Promise<Product>;
   delete(id: number): Promise<void>;
   findByCategory(categoryId: number): Promise<Product[]>;
+  findFiltered(page: number,limit: number,search?: string): Promise<{ products: Product[]; total: number }>;
 }
 
 export class ProductsRepository implements IProductsRepository {
@@ -107,4 +108,52 @@ export class ProductsRepository implements IProductsRepository {
     const [rows] = await db.query(`SELECT * FROM products WHERE category_id=?`, [categoryId]);
     return rows as Product[];
   }
+
+  //paginacion
+  async findFiltered(
+  page: number,
+  limit: number,
+  search?: string
+): Promise<{ products: Product[]; total: number }> {
+  const offset = (page - 1) * limit;
+  const filters: string[] = [
+    "is_active = 1",
+    "stock > 0",
+    "image_url IS NOT NULL",
+    "is_discontinued = 0"
+  ];
+  const values: any[] = [];
+
+  if (search) {
+    filters.push("name LIKE ?");
+    values.push(`%${search}%`);
+  }
+
+  const whereClause = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+
+  
+  const [rows] = await db.query(
+    `
+          SELECT 
+      name, 
+      description, 
+      ROUND(price, 2) AS price, 
+      image_url
+    FROM products
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?`,
+    [...values, limit, offset]
+  );
+
+  const [countRows]: any = await db.query(
+    `SELECT COUNT(*) as total FROM products ${whereClause}`,
+    values
+  );
+
+  return { products: rows as Product[], total: countRows[0].total };
 }
+
+}
+
+

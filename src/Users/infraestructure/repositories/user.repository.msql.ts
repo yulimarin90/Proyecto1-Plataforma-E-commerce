@@ -3,14 +3,15 @@ import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { User, NewUser } from "../../domain/user.entity";
 import { IUserRepository } from "../repositories/user.repository";
 
+
 export class MySQLUserRepository implements IUserRepository {
   async create(user: NewUser): Promise<number> {
   console.log("Usuario que llega al repositorio:", user);
 
   const [result] = await db.query<ResultSetHeader>(
     `INSERT INTO users 
-      (name, email, password, phone, address, created_at, failed_attempts, locked_until, is_verified, verification_token, verification_expires)
-     VALUES (?, ?, ?, ?, ?, NOW(), 0, NULL, 0, ?, ?)`,
+      (name, email, password, phone, address, created_at, failed_attempts, locked_until, is_verified, verification_token, verification_expires,role)
+     VALUES (?, ?, ?, ?, ?, NOW(), 0, NULL, 0, ?, ?,?)`,
     [
       user.name,
       user.email,
@@ -19,6 +20,7 @@ export class MySQLUserRepository implements IUserRepository {
       user.address,
       user.verification_token,
       user.verification_expires,
+      user.role || "user",
     ]
   );
   return result.insertId;
@@ -45,6 +47,7 @@ export class MySQLUserRepository implements IUserRepository {
     password: userRow.password,
     address: userRow.address,
     phone: userRow.phone,
+    role: userRow.role,
     created_at: userRow.created_at,
     failed_attempts: userRow.failed_attempts ?? 0,
     locked_until: userRow.locked_until,
@@ -75,6 +78,7 @@ async findById(id: number): Promise<User | null> {
     password: userRow.password,
     address: userRow.address,
     phone: userRow.phone,
+    role: userRow.role,
     created_at: userRow.created_at,
     failed_attempts: userRow.failed_attempts ?? 0,
     locked_until: userRow.locked_until,

@@ -22,7 +22,7 @@ export class CartRepository  implements ICartRepository {
     if (!product) throw new Error("Producto no encontrado");
 
     await db.query(
-      `INSERT INTO cart_items (cart_id, product_id, quantity, price, stock_available, subtotal)
+      `INSERT INTO carts (cart_id, product_id, quantity, price, stock_available, subtotal)
        VALUES (?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE quantity = VALUES(quantity), subtotal = VALUES(subtotal)`,
       [cartId, productId, quantity, price, stockAvailable, quantity * price]
@@ -31,7 +31,7 @@ export class CartRepository  implements ICartRepository {
 
    // Elimina un ítem específico del carrito
   async removeItem(cartId: number, productId: number): Promise<void> {
-    await db.query("DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?", [
+    await db.query("DELETE FROM carts WHERE cart_id = ? AND product_id = ?", [
       cartId,
       productId,
     ]);
@@ -39,7 +39,7 @@ export class CartRepository  implements ICartRepository {
 
   // Limpia todos los ítems del carrito sin eliminarlo
   async clearItems(cartId: number): Promise<void> {
-    await db.query("DELETE FROM cart_items WHERE cart_id = ?", [cartId]);
+    await db.query("DELETE FROM carts WHERE cart_id = ?", [cartId]);
   }
 
   // Buscar un carrito asociado a un usuario
@@ -59,7 +59,7 @@ export class CartRepository  implements ICartRepository {
 
     // Obtener los ítems del carrito asociado
     const [itemRows] = await db.query<RowDataPacket[]>(
-      "SELECT ci.*, p.name FROM cart_items ci JOIN products p ON ci.product_id = p.id WHERE ci.cart_id = ?",
+      "SELECT ci.*, p.name FROM carts ci JOIN products p ON ci.product_id = p.id WHERE ci.cart_id = ?",
       [cartRow.id]
     );
 
@@ -115,7 +115,7 @@ export class CartRepository  implements ICartRepository {
     // Guardamos o actualizamos los ítems del carrito
     for (const item of cart.items) {
       await db.query<ResultSetHeader>(
-        `REPLACE INTO cart_items 
+        `REPLACE INTO carts 
          (cart_id, product_id, quantity, price, stock_available, subtotal, added_at, price_locked_until)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
@@ -138,7 +138,7 @@ export class CartRepository  implements ICartRepository {
     if (rows.length > 0) {
       const cartId = rows[0].id;
       // Primero eliminamos los ítems asociados
-      await db.query("DELETE FROM cart_items WHERE cart_id = ?", [cartId]);
+      await db.query("DELETE FROM carts WHERE cart_id = ?", [cartId]);
     }
     // Luego eliminamos el carrito
     await db.query("DELETE FROM carts WHERE user_id = ?", [userId]);

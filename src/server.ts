@@ -11,9 +11,6 @@ import app from "./app";
 import { SocketAdapter } from "./Tracking/websocket/socket.adapter";
 
 
-console.log("JWT_SECRET:", process.env.JWT_SECRET);
-console.log("JWT_REFRESH_SECRET:", process.env.JWT_REFRESH_SECRET);
-
 const PORT = process.env.PORT || 3001;
 
 const server = http.createServer(app);
