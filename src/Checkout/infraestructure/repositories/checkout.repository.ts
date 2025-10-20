@@ -24,9 +24,16 @@ export class CheckoutRepository {
 
 
   async reduceStock(productId: number, quantity: number) {
-    await db.query(`UPDATE products SET stock = stock - ? WHERE id = ?`, [
-      quantity,
-      productId,
-    ]);
+  const [result]: any = await db.query(
+    `UPDATE products 
+     SET stock = stock - ? 
+     WHERE id = ? AND stock >= ?`,
+    [quantity, productId, quantity]
+  );
+
+  if (result.affectedRows === 0) {
+    throw { status: 400, message: "Stock insuficiente o producto no encontrado" };
   }
+}
+
 }

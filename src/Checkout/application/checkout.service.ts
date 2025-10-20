@@ -46,7 +46,7 @@ export class CheckoutService {
     const productsForOrder: any[] = [];
 
     // --- Validar cada producto y armar array compatible con OrdersService ---
-    for (const item of products) {
+    for (const item of finalProducts) {
       const product = await this.checkoutRepo.getProductById(item.id);
       if (!product) {
         throw { status: 404, message: `Producto ${item.id} no encontrado` };

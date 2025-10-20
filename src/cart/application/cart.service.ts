@@ -1,4 +1,3 @@
-
 import { ICartRepository } from "../infraestructure/repositories/cart.repository";
 import { Cart, CartItem } from "../domain/cart.entity";
 import { CartOperations } from "../domain/cart.operations";
@@ -6,11 +5,10 @@ import { CartOperations } from "../domain/cart.operations";
 export class CartService {
   constructor(private repository: ICartRepository) {}
 
-  // Obtener carrito del usuario o crearlo si no existe
+  // 🛒 Obtener carrito existente o crear uno nuevo
   async getCart(userId: number): Promise<Cart> {
     let cart = await this.repository.findByUser(userId);
 
-    // Si no existe, crear uno nuevo
     if (!cart) {
       cart = {
         id: 0,
@@ -25,49 +23,38 @@ export class CartService {
       await this.repository.save(cart);
     }
 
-    // Verificar expiración
     const operations = new CartOperations(cart);
     operations.checkExpiration();
 
     return cart;
   }
 
-  // Agregar producto al carrito
+  // ➕ Agregar producto al carrito
   async addItem(
     userId: number,
-    product: Omit<CartItem, "added_at" | "price_locked_until" | "subtotal">
+    product: Omit<CartItem, "added_at" | "price_locked_until" | "subtotal">,
+    currentStock: number
+    
   ) {
-    // Validaciones iniciales
-    // Aceptar product_id como número o string numérico; convertir y validar entero > 0
-    const pid = Number((product as any).product_id);
-    if (!Number.isInteger(pid) || pid <= 0) {
-      throw new Error("El ID del producto no es válido");
-    }
-    // asignar el id convertido (por si vino como string)
-    (product as any).product_id = pid;
-    if (product.quantity <= 0) {
-      throw new Error("La cantidad debe ser mayor a 0");
-    }
-    if (product.price <= 0) {
-      throw new Error("El precio debe ser mayor a 0");
-    }
-    if (product.stock_available < product.quantity) {
-      throw new Error("Cantidad supera el stock disponible");
-    }
-
-    // Obtener carrito
     const cart = await this.getCart(userId);
     const operations = new CartOperations(cart);
 
-    // Agregar producto mediante CartOperations
-    operations.addItem(product);
+    // Validar expiración
+    operations.checkExpiration();
 
-    // Guardar cambios
+    // Lógica de negocio para agregar producto
+    operations.addItem(product,currentStock);
+
+    // Persistir cambios en base de datos
     await this.repository.save(cart);
+
     return cart;
   }
 
-  // Actualizar cantidad de un producto existente
+  async saveCart(cart: Cart) {
+  await this.repository.save(cart); }
+
+  // 🧮 Actualizar cantidad
   async updateQuantity(
     userId: number,
     productId: number,
@@ -77,30 +64,83 @@ export class CartService {
     const cart = await this.getCart(userId);
     const operations = new CartOperations(cart);
 
+    operations.checkExpiration();
     operations.updateQuantity(productId, quantity, currentStock);
 
     await this.repository.save(cart);
     return cart;
   }
 
-  // Eliminar un producto del carrito
+  // 🗑️ Eliminar ítem
   async removeItem(userId: number, productId: number) {
     const cart = await this.getCart(userId);
     const operations = new CartOperations(cart);
 
+    operations.checkExpiration();
     operations.removeItem(productId);
 
     await this.repository.save(cart);
     return cart;
   }
 
-  // Vaciar carrito
+  // 🧼 Vaciar carrito
   async clearCart(userId: number) {
     const cart = await this.getCart(userId);
     const operations = new CartOperations(cart);
 
     operations.clear();
-
     await this.repository.save(cart);
+  }
+
+  // 🧾 Checkout
+  async checkout(
+    userId: number,
+    shipping_address: string,
+    payment_method: string
+  ) {
+    const cart = await this.getCart(userId);
+    const operations = new CartOperations(cart);
+
+    operations.checkExpiration();
+
+    if (cart.items.length === 0) {
+      throw new Error("El carrito está vacío");
+    }
+
+    // Validar stock en tiempo real
+    for (const item of cart.items) {
+      const product = await this.repository.findProductById(item.product_id);
+      if (!product) {
+        throw new Error(`Producto con ID ${item.product_id} no existe`);
+      }
+      if (item.quantity > product.stock) {
+        throw new Error(`Stock insuficiente para el producto ${product.name}`);
+      }
+    }
+
+    // Crear orden y mover productos
+    const orderId = await this.repository.createOrder({
+      user_id: userId,
+      cart_id: cart.id,
+      total_amount: cart.total_amount,
+      shipping_address,
+      payment_method,
+      status: "PENDIENTE",
+    });
+
+    for (const item of cart.items) {
+      await this.repository.createOrderItem({
+        order_id: orderId,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: item.price,
+        subtotal: item.subtotal,
+      });
+
+      await this.repository.decreaseProductStock(item.product_id, item.quantity);
+    }
+
+    await this.repository.markCartAsCheckedOut(cart.id);
+    return this.repository.findOrderById(orderId);
   }
 }

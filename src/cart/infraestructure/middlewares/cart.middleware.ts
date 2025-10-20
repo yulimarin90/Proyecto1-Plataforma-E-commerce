@@ -20,32 +20,34 @@ export interface CartRequest extends Request {
 }
 
 // Middleware para verificar que el usuario esté autenticado
-export function verifyUser(req: Request, res: Response, next: NextFunction) {
-  const userId = req.headers["x-user-id"];
-  
-  if (!userId) {
-    return res.status(401).json({ error: "Usuario no autenticado" });
-  }
-
-  next();
-}
-
-// Middleware para autenticación mediante JWT
 export const authCartMiddleware = (req: CartRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ message: "Token requerido" });
+  const userIdHeader = req.headers["x-user-id"];
 
-  const token = authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "Token inválido" });
+  if (!authHeader && !userIdHeader) {
+    return res.status(401).json({ message: "Usuario no autenticado" });
+  }
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(403).json({ message: "Token inválido o expirado" });
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+    try {
+      if (!token) return res.status(401).json({ message: "Token requerido" });
+      const decoded = jwt.verify(token, JWT_SECRET);
+      req.user = decoded;
+      return next();
+    } catch {
+      return res.status(403).json({ message: "Token inválido o expirado" });
+    }
+  }
+
+  if (userIdHeader) {
+    req.user = { id: Number(userIdHeader) };
+    return next();
   }
 };
+
+
+
 
 // Middleware para verificar que el carrito exista
 export const ensureCartExists = async (req: CartRequest, res: Response, next: NextFunction) => {
@@ -55,6 +57,7 @@ export const ensureCartExists = async (req: CartRequest, res: Response, next: Ne
 
     const cart = await cartService.getCart(userId);
     if (!cart) return res.status(404).json({ message: "Carrito no encontrado" });
+
 
     // Verificar si el carrito ha expirado (más de 24h sin actividad)
     const now = new Date();
@@ -72,15 +75,15 @@ export const ensureCartExists = async (req: CartRequest, res: Response, next: Ne
 // Middleware para verificar stock antes de agregar o actualizar ítems
 export const checkProductStock = async (req: CartRequest, res: Response, next: NextFunction) => {
   try {
-    const { productId, cantidad } = req.body;
-    if (!productId || !cantidad) {
+    const { productId, quantity } = req.body;
+    if (!productId || !quantity) {
       return res.status(400).json({ message: "productId y cantidad son requeridos" });
     }
 
     const product = await productsRepository.findById(Number(productId));
     if (!product) return res.status(404).json({ message: "Producto no encontrado" });
 
-    if (cantidad > product.stock) {
+    if (quantity > product.stock) {
       return res.status(400).json({ message: "Cantidad supera el stock disponible" });
     }
 
@@ -94,12 +97,39 @@ export const checkProductStock = async (req: CartRequest, res: Response, next: N
 
 // Middleware para validar estructura del body al agregar o actualizar ítems
 export const validateCartItem = (req: Request, res: Response, next: NextFunction) => {
-  const { productId, cantidad } = req.body;
+  const { productId, quantity } = req.body;
   if (!productId || typeof productId !== "number") {
     return res.status(400).json({ message: "productId debe ser un número válido" });
   }
-  if (!cantidad || typeof cantidad !== "number" || cantidad <= 0) {
+  if (!quantity || typeof quantity !== "number" || quantity <= 0) {
     return res.status(400).json({ message: "cantidad debe ser un número positivo" });
   }
+  next();
+};
+
+export const validateCartBeforeCheckout = (req: CartRequest, res: Response, next: NextFunction) => {
+  if (!req.cart || req.cart.items.length === 0) {
+    return res.status(400).json({ message: "El carrito está vacío" });
+  }
+  next();
+};
+
+export const verifyPriceLock = async (req: CartRequest, res: Response, next: NextFunction) => {
+  const cart = req.cart;
+  const now = new Date();
+
+  for (const item of cart.items) {
+    if (item.price_locked_until && now > new Date(item.price_locked_until)) {
+      // Buscar precio actual
+      const product = await productsRepository.findById(item.product_id);
+      if (product) {
+        item.price = product.price;
+        item.subtotal = item.price * item.quantity;
+        item.price_locked_until = new Date(Date.now() + 2 * 60 * 60 * 1000);
+      }
+    }
+  }
+
+  await cartService.saveCart(cart);
   next();
 };

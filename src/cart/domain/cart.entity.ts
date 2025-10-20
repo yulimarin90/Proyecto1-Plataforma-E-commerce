@@ -1,14 +1,14 @@
 // Representa cada producto dentro del carrito
 export interface CartItem {
   product_id: number;
-  name: string;
-  price: number;
+  name?: string;
   quantity: number;
-  stock_available: number;
-  added_at: Date;
-  price_locked_until: Date;
-  subtotal?: number;
+  price: number;
+  subtotal: number;
+  created_at: Date;
+  updated_at: Date;
 }
+
 
 // Para cuando se crea un nuevo carrito
 export interface NewCart {

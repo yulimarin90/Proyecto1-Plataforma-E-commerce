@@ -1,43 +1,43 @@
 import { Cart, CartItem } from "./cart.entity";
 
-
 export class CartOperations {
-  // Recibe una instancia del carrito sobre la cual actuará
   constructor(public cart: Cart) {}
 
-  // Agrega un producto al carrito o aumenta la cantidad si ya existe
-  addItem(product: Omit<CartItem, "added_at" | "price_locked_until" | "subtotal">) {
+  // 🛍️ Agrega un producto al carrito o aumenta la cantidad si ya existe
+  addItem(
+    product: Omit<CartItem, "created_at" | "updated_at" | "subtotal">,
+    currentStock: number
+  ) {
     const existing = this.cart.items.find(i => i.product_id === product.product_id);
     const now = new Date();
 
     if (existing) {
-      // Si ya está en el carrito, aumenta la cantidad
       const newQuantity = existing.quantity + product.quantity;
-      if (newQuantity > existing.stock_available) {
+      if (newQuantity > currentStock) {
         throw new Error("Cantidad supera el stock disponible");
       }
       existing.quantity = newQuantity;
       existing.subtotal = existing.price * existing.quantity;
+      existing.updated_at = now;
     } else {
-      // Si es nuevo, crea un nuevo ítem con tiempo de precio bloqueado (2h)
-      if (product.quantity > product.stock_available) {
+      if (product.quantity > currentStock) {
         throw new Error("Cantidad supera el stock disponible");
       }
 
-      const lockedUntil = new Date(now.getTime() + 2 * 60 * 60 * 1000);
       const newItem: CartItem = {
         ...product,
-        added_at: now,
-        price_locked_until: lockedUntil,
         subtotal: product.price * product.quantity,
+        created_at: now,
+        updated_at: now,
       };
+
       this.cart.items.push(newItem);
     }
 
-    this.refreshTotals(); // Actualiza totales del carrito
+    this.refreshTotals();
   }
 
-  // Actualiza la cantidad de un producto existente
+  // 📝 Actualiza la cantidad de un producto existente
   updateQuantity(product_id: number, quantity: number, currentStock: number) {
     const item = this.cart.items.find(i => i.product_id === product_id);
     if (!item) throw new Error("Producto no encontrado en el carrito");
@@ -46,23 +46,24 @@ export class CartOperations {
 
     item.quantity = quantity;
     item.subtotal = item.price * quantity;
+    item.updated_at = new Date();
     this.refreshTotals();
   }
 
-  // Elimina un producto del carrito
+  // ❌ Elimina un producto del carrito
   removeItem(product_id: number) {
     this.cart.items = this.cart.items.filter(i => i.product_id !== product_id);
     this.refreshTotals();
   }
 
-  // Vacía completamente el carrito
+  // 🧹 Vacía completamente el carrito
   clear() {
     this.cart.items = [];
     this.cart.total_amount = 0;
     this.cart.updated_at = new Date();
   }
 
-  // Verifica si el carrito ha expirado por inactividad
+  // ⏳ Verifica si el carrito ha expirado
   checkExpiration() {
     const now = new Date();
     if (this.cart.expires_at && now > this.cart.expires_at) {
@@ -71,13 +72,14 @@ export class CartOperations {
     }
   }
 
-  // Recalcula el total y extiende la fecha de expiración 24h
+  // 🔄 Recalcula totales y extiende expiración
   private refreshTotals() {
     this.cart.total_amount = this.cart.items.reduce(
       (sum, item) => sum + (item.subtotal || 0),
       0
     );
     this.cart.updated_at = new Date();
+    // ⏰ extiende expiración 24h desde la última actualización
     this.cart.expires_at = new Date(this.cart.updated_at.getTime() + 24 * 60 * 60 * 1000);
   }
 }
