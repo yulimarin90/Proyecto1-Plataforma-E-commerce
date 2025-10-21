@@ -12,10 +12,17 @@ export const setProductsRepository = (repo: any) => (productRepository = repo);
 
 export class CartController {
   /** 🧭 Utilidad para obtener el ID de usuario */
-  private getUserId(req: Request): number {
-  return Number(req.headers["x-user-id"] || req.body.user_id);
-}
+  /** 🧭 Obtener ID de usuario desde header o body */
+private getUserId(req: Request): number {
+  const headerId = req.headers["x-user-id"];
+  const bodyId = req.body?.user_id ?? req.body?.userId;
+  const queryId = req.query?.user_id ?? req.query?.userId;
+  const userObjId = (req as any).user?.id;
 
+  // prioridad: header -> body -> query -> req.user
+  const val = headerId ?? bodyId ?? queryId ?? userObjId;
+  return Number(val);
+}
   /** 📥 Ver carrito del usuario */
   async viewCart(req: Request, res: Response) {
     try {
@@ -133,7 +140,7 @@ const productData = {
       if (isNaN(userId)) return res.status(401).json({ error: "Usuario no autenticado" });
 
       await cartService.clearCart(userId);
-      return res.status(204).send();
+      return res.status(200).json({ message: "carrito eliminado completamente" });
     } catch (e: any) {
       return res.status(400).json({ error: e.message });
     }

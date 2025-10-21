@@ -54,13 +54,8 @@ export class CartRepository implements ICartRepository {
     return rows[0] || null;
   }
 
-  // 🔸 Agregar o actualizar un ítem del carrito
-  async upsertItem(
-    cartId: number,
-    productId: number,
-    quantity: number,
-    price: number,
-  ): Promise<void> {
+  // ✅ Agregar o actualizar un ítem del carrito
+  async upsertItem(cartId: number, productId: number, quantity: number, price: number): Promise<void> {
     const product = await this.productsRepository.findById(productId);
     if (!product) throw new Error("Producto no encontrado");
 
@@ -74,7 +69,7 @@ export class CartRepository implements ICartRepository {
     );
   }
 
-  // 🔸 Elimina un ítem específico del carrito
+  // ✅ Elimina un ítem específico del carrito
   async removeItem(cartId: number, productId: number): Promise<void> {
     await db.query("DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?", [
       cartId,
@@ -82,87 +77,98 @@ export class CartRepository implements ICartRepository {
     ]);
   }
 
-  // 🔸 Limpia todos los ítems del carrito
+  // ✅ Limpia todos los ítems del carrito
   async clearItems(cartId: number): Promise<void> {
     await db.query("DELETE FROM cart_items WHERE cart_id = ?", [cartId]);
   }
 
-  // 🔸 Buscar un carrito por usuario
-  async findByUser(userId: number): Promise<Cart | null> {
-    const [cartRows] = await db.query<RowDataPacket[]>(
-      "SELECT * FROM carts WHERE user_id = ?",
-      [userId]
-    );
-
-    if (!cartRows || cartRows.length === 0) return null;
-    const cartRow = cartRows[0]!;
-
-    const [itemRows] = await db.query<RowDataPacket[]>(
-      `SELECT ci.*, p.name 
-       FROM cart_items ci 
-       JOIN products p ON ci.product_id = p.id 
-       WHERE ci.cart_id = ?`,
-      [cartRow.id]
-    );
-
-    const items: CartItem[] = itemRows.map((r: RowDataPacket) => ({
-  product_id: r.product_id,
-  name: r.name,
-  quantity: r.quantity,
-  price: r.price,
-  subtotal: r.subtotal,
-  created_at: new Date(r.created_at),
-  updated_at: new Date(r.updated_at),
-}));
-
-
-    return {
-      id: cartRow.id,
-      user_id: cartRow.user_id,
-      items,
-      total_amount: cartRow.total_amount,
-      created_at: new Date(cartRow.created_at),
-      updated_at: cartRow.updated_at,
-      expires_at: cartRow.expires_at,
-      status: cartRow.status,
-    };
-  }
-
-
-// 🔸 Guardar carrito y sus ítems
-async save(cart: Cart): Promise<void> {
-  // 🧹 1. Eliminar ítems anteriores del carrito
-  await db.query("DELETE FROM cart_items WHERE cart_id = ?", [cart.id]);
-
-  // 📝 2. Guardar cada ítem del carrito
-  for (const item of cart.items) {
-    await db.query<ResultSetHeader>(
-      `INSERT INTO cart_items
-       (cart_id, product_id, quantity, price, subtotal, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        cart.id,
-        item.product_id,
-        item.quantity,
-        item.price,
-        item.subtotal,
-        item.created_at,
-        item.updated_at,
-      ]
-    );
-  }
-
-  // 🛒 3. Actualizar información general del carrito
-  await db.query<ResultSetHeader>(
-    `UPDATE carts
-     SET total_amount = ?, updated_at = NOW(), expires_at = ?
-     WHERE id = ?`,
-    [cart.total_amount, cart.expires_at, cart.id]
+  
+  // ✅ Buscar un carrito por usuario
+async findByUser(userId: number): Promise<Cart | null> {
+  // 1️⃣ Buscar carrito base
+  const [cartRows] = await db.query<RowDataPacket[]>(
+    `SELECT * FROM carts WHERE user_id = ? LIMIT 1`,
+    [userId]
   );
+
+  // ⛔ Si no hay carrito, retornar null
+  if (!cartRows || cartRows.length === 0) {
+    return null;
+  }
+
+  // ✅ Aquí TS ya sabe que hay al menos 1 resultado
+  const cartRow = cartRows[0] as RowDataPacket;
+
+  // 2️⃣ Buscar ítems del carrito
+  const [itemsRows] = await db.query<RowDataPacket[]>(
+    `SELECT ci.*, p.name 
+     FROM cart_items ci
+     JOIN products p ON ci.product_id = p.id
+     WHERE ci.cart_id = ?`,
+    [cartRow.id]
+  );
+
+  const items: CartItem[] = itemsRows.map((row) => ({
+    product_id: row.product_id,
+    name: row.name,
+    quantity: row.quantity,
+    price: Number(row.price),
+    subtotal: Number(row.subtotal),
+    added_at: row.added_at,
+    price_locked_until: row.price_locked_until,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+
+  // 3️⃣ Retornar carrito construido ✅
+  return {
+    id: cartRow.id,
+    user_id: cartRow.user_id,
+    items,
+    total_amount: Number(cartRow.total_amount),
+    created_at: cartRow.created_at,
+    updated_at: cartRow.updated_at,
+    expires_at: cartRow.expires_at,
+    status: cartRow.status,
+  };
 }
 
 
-  // 🔸 Eliminar carrito completo
+  async save(cart: Cart): Promise<void> {
+    // Si el carrito no existe aún, no se intenta guardar
+    if (!cart || !cart.id) return;
+
+    // 🧹 1. Eliminar ítems anteriores
+    await db.query("DELETE FROM cart_items WHERE cart_id = ?", [cart.id]);
+
+    // 📝 2. Guardar cada ítem
+    for (const item of cart.items) {
+      await db.query<ResultSetHeader>(
+        `INSERT INTO cart_items
+         (cart_id, product_id, quantity, price, subtotal, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          cart.id,
+          item.product_id,
+          item.quantity,
+          item.price,
+          item.subtotal,
+          item.created_at,
+          item.updated_at,
+        ]
+      );
+    }
+
+    // 🛒 3. Actualizar info general del carrito
+    await db.query<ResultSetHeader>(
+      `UPDATE carts
+       SET total_amount = ?, updated_at = NOW(), expires_at = ?
+       WHERE id = ?`,
+      [cart.total_amount, cart.expires_at, cart.id]
+    );
+  }
+
+  // ✅ Eliminar carrito completo
   async deleteCart(userId: number): Promise<void> {
     const [rows]: any = await db.query("SELECT id FROM carts WHERE user_id = ?", [userId]);
     if (rows.length > 0) {

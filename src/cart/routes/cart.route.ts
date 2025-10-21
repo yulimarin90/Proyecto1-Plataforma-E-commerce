@@ -11,41 +11,18 @@ import { CheckoutController } from "../../Checkout/infraestructure/controllers/c
 const router = Router();
 const controller = new CartController();
 
-/**
- * Todas las rutas del carrito requieren autenticación,
- * asegurarse que el carrito exista y esté vigente.
- */
+
 router.use(authCartMiddleware, ensureCartExists);
 
-/**
- * 🛒 Ver carrito del usuario
- * GET /api/cart
- */
-router.get("/cart", controller.viewCart);
+//ver carrito por el usuario
+router.get("/cart", controller.viewCart.bind(controller));
 
-/**
- * ➕ Agregar producto al carrito
- * POST /api/cart/items
- * Requiere validar stock y body
- */
+//agregar productos al carrito
 router.post("/cart/items", validateCartItem, checkProductStock, controller.addItem.bind(controller));
-
-/**
- * ✏️ Actualizar cantidad de un ítem del carrito
- * PATCH /api/cart/items/:productId
- */
 router.patch("/cart/items/:productId", validateCartItem, controller.updateQuantity.bind(controller));
-
-/**
- * 🗑️ Eliminar ítem del carrito
- * DELETE /api/cart/items/:productId
- */
+//eliminar productos del carrito 
 router.delete("/cart/items/:productId", controller.removeItem.bind(controller));
-
-/**
- * 🧹 Vaciar carrito completamente
- * DELETE /api/cart/clear
- */
+//eliminar carrito completamente
 router.delete("/cart/clear", controller.clearCart.bind(controller));
 
 router.post("/cart/checkout", validateCartBeforeCheckout, CheckoutController.checkout);

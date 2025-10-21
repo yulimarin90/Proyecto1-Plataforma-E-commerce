@@ -72,25 +72,42 @@ export class CartService {
   }
 
   // 🗑️ Eliminar ítem
-  async removeItem(userId: number, productId: number) {
-    const cart = await this.getCart(userId);
-    const operations = new CartOperations(cart);
+ async removeItem(userId: number, productId: number) {
+  const cart = await this.getCart(userId);
+  const operations = new CartOperations(cart);
 
-    operations.checkExpiration();
-    operations.removeItem(productId);
-
-    await this.repository.save(cart);
-    return cart;
+  // ✅ Verificar si el carrito está vacío
+  if (!cart.items || cart.items.length === 0) {
+    throw new Error("El carrito está vacío, no hay productos por eliminar");
   }
+
+  // ✅ Verificar si el producto existe en el carrito
+  const itemExists = cart.items.some(item => item.product_id === productId);
+  if (!itemExists) {
+    throw new Error("El producto no existe en el carrito");
+  }
+
+  operations.checkExpiration();
+  operations.removeItem(productId);
+
+  await this.repository.save(cart);
+  return cart;
+}
 
   // 🧼 Vaciar carrito
-  async clearCart(userId: number) {
-    const cart = await this.getCart(userId);
-    const operations = new CartOperations(cart);
+async clearCart(userId: number) {
+  const cart = await this.getCart(userId);
+  const operations = new CartOperations(cart);
 
-    operations.clear();
-    await this.repository.save(cart);
+  // 🚨 Validar si ya está vacío
+  if (!cart.items || cart.items.length === 0) {
+    throw new Error("El carrito ya está vacío");
   }
+
+  operations.clear();
+  await this.repository.save(cart);
+}
+
 
   // 🧾 Checkout
   async checkout(
