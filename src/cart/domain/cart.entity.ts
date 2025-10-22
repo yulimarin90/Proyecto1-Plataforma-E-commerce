@@ -24,4 +24,11 @@ export interface NewCart {
 // Para carritos existentes
 export interface Cart extends NewCart {
   id: number;
+  user_id: number;
+  items: CartItem[];
+  total_amount: number;
+    status?: "active" | "expired" | "completed";
+  created_at: Date;
+  updated_at: Date;
+  expires_at: Date;
 }

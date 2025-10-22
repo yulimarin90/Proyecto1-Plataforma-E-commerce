@@ -5,62 +5,88 @@ import { CartOperations } from "../domain/cart.operations";
 export class CartService {
   constructor(private repository: ICartRepository) {}
 
-  // 🛒 Obtener carrito existente o crear uno nuevo
+  /** 🛒 Obtener carrito activo o crear uno nuevo */
   async getCart(userId: number): Promise<Cart> {
     let cart = await this.repository.findByUser(userId);
 
-    if (!cart) {
-      cart = {
-        id: 0,
-        user_id: userId,
-        items: [],
-        total_amount: 0,
-        created_at: new Date(),
-        updated_at: new Date(),
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        status: "active",
-      };
-      await this.repository.save(cart);
+    if (cart) {
+      // 🕐 Verificar expiración
+      if (cart.expires_at && new Date() > new Date(cart.expires_at)) {
+        console.log("⚠️ Carrito expirado. Creando uno nuevo...");
+        // Marcar como expirado
+        await this.repository.updateStatus(cart.id, "expired");
+
+        //Eliminar el carrito viejo (junto con ítems)
+        await this.repository.delete(cart.id);
+
+        // Crear nuevo carrito activo
+        const newCart: Cart = {
+          id: 0,
+          user_id: userId,
+          items: [],
+          total_amount: 0,
+          created_at: new Date(),
+          updated_at: new Date(),
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+          status: "active",
+        };
+
+        const saved = await this.repository.save(newCart);
+        console.log("🆕 Nuevo carrito creado tras expiración");
+        return saved;
+      }
+
+      return cart;
     }
 
-    const operations = new CartOperations(cart);
-    operations.checkExpiration();
+    // 🆕 Si no existe ninguno, crear uno nuevo
+    const newCart: Cart = {
+      id: 0,
+      user_id: userId,
+      items: [],
+      total_amount: 0,
+      created_at: new Date(),
+      updated_at: new Date(),
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      status: "active",
+    };
 
-    return cart;
+    const saved = await this.repository.save(newCart);
+    return saved;
   }
 
-  // ➕ Agregar producto al carrito
+  /** 🧮 Agregar producto al carrito */
   async addItem(
     userId: number,
-    product: Omit<CartItem, "added_at" | "price_locked_until" | "subtotal">,
+    product: Omit<CartItem, "subtotal">,
     currentStock: number
-    
-  ) {
+  ): Promise<Cart> {
     const cart = await this.getCart(userId);
     const operations = new CartOperations(cart);
 
     // Validar expiración
     operations.checkExpiration();
 
-    // Lógica de negocio para agregar producto
-    operations.addItem(product,currentStock);
+    // Agregar producto (CartOperations maneja stock y cantidad)
+    operations.addItem(product, currentStock);
 
-    // Persistir cambios en base de datos
+    // Persistir
     await this.repository.save(cart);
-
     return cart;
   }
 
+  /** 💾 Guardar carrito (manual) */
   async saveCart(cart: Cart) {
-  await this.repository.save(cart); }
+    await this.repository.save(cart);
+  }
 
-  // 🧮 Actualizar cantidad
+  /** 🔄 Actualizar cantidad */
   async updateQuantity(
     userId: number,
     productId: number,
     quantity: number,
     currentStock: number
-  ) {
+  ): Promise<Cart> {
     const cart = await this.getCart(userId);
     const operations = new CartOperations(cart);
 
@@ -71,45 +97,37 @@ export class CartService {
     return cart;
   }
 
-  // 🗑️ Eliminar ítem
- async removeItem(userId: number, productId: number) {
-  const cart = await this.getCart(userId);
-  const operations = new CartOperations(cart);
+  /** 🗑️ Eliminar ítem */
+  async removeItem(userId: number, productId: number): Promise<Cart> {
+    const cart = await this.getCart(userId);
+    const operations = new CartOperations(cart);
 
-  // ✅ Verificar si el carrito está vacío
-  if (!cart.items || cart.items.length === 0) {
-    throw new Error("El carrito está vacío, no hay productos por eliminar");
+    if (!cart.items || cart.items.length === 0)
+      throw new Error("El carrito está vacío, no hay productos por eliminar");
+
+    const itemExists = cart.items.some((item) => item.product_id === productId);
+    if (!itemExists) throw new Error("El producto no existe en el carrito");
+
+    operations.checkExpiration();
+    operations.removeItem(productId);
+
+    await this.repository.save(cart);
+    return cart;
   }
 
-  // ✅ Verificar si el producto existe en el carrito
-  const itemExists = cart.items.some(item => item.product_id === productId);
-  if (!itemExists) {
-    throw new Error("El producto no existe en el carrito");
+  /** 🧼 Vaciar carrito */
+  async clearCart(userId: number): Promise<void> {
+    const cart = await this.getCart(userId);
+    const operations = new CartOperations(cart);
+
+    if (!cart.items || cart.items.length === 0)
+      throw new Error("El carrito ya está vacío");
+
+    operations.clear();
+    await this.repository.save(cart);
   }
 
-  operations.checkExpiration();
-  operations.removeItem(productId);
-
-  await this.repository.save(cart);
-  return cart;
-}
-
-  // 🧼 Vaciar carrito
-async clearCart(userId: number) {
-  const cart = await this.getCart(userId);
-  const operations = new CartOperations(cart);
-
-  // 🚨 Validar si ya está vacío
-  if (!cart.items || cart.items.length === 0) {
-    throw new Error("El carrito ya está vacío");
-  }
-
-  operations.clear();
-  await this.repository.save(cart);
-}
-
-
-  // 🧾 Checkout
+  /** 🧾 Checkout */
   async checkout(
     userId: number,
     shipping_address: string,
@@ -127,16 +145,14 @@ async clearCart(userId: number) {
     // Validar stock en tiempo real
     for (const item of cart.items) {
       const product = await this.repository.findProductById(item.product_id);
-      if (!product) {
-        throw new Error(`Producto con ID ${item.product_id} no existe`);
-      }
-      if (item.quantity > product.stock) {
-        throw new Error(`Stock insuficiente para el producto ${product.name}`);
-      }
+      if (!product) throw new Error(`Producto ${item.product_id} no existe`);
+      if (item.quantity > product.stock)
+        throw new Error(`Stock insuficiente para ${product.name}`);
     }
 
-    // Crear orden y mover productos
+    // Crear orden
     const orderId = await this.repository.createOrder({
+
       user_id: userId,
       cart_id: cart.id,
       total_amount: cart.total_amount,
@@ -145,16 +161,18 @@ async clearCart(userId: number) {
       status: "PENDIENTE",
     });
 
+    // Insertar ítems
     for (const item of cart.items) {
       await this.repository.createOrderItem({
         order_id: orderId,
         product_id: item.product_id,
         quantity: item.quantity,
         price: item.price,
-        subtotal: item.subtotal,
+        subtotal: item.price * item.quantity,
       });
 
       await this.repository.decreaseProductStock(item.product_id, item.quantity);
+      await this.repository.markCartAsCheckedOut(cart.id);
     }
 
     await this.repository.markCartAsCheckedOut(cart.id);
