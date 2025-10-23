@@ -7,16 +7,39 @@ export class TrackingService {
   constructor(private trackingRepository: ITrackingRepository) {}
 
   async createTracking(tracking: Tracking) {
+    // 1️⃣ Validar orden
+    type OrderRow = RowDataPacket & { id: number; status: string; user_id: number };
+    const [orderRows] = await db.query<OrderRow[]>(`SELECT id, status, user_id FROM orders WHERE id = ?`, [tracking.order_id]);
+    const order = orderRows[0];
+    if (!order) throw { status: 404, message: "La orden asociada no existe" };
+   if (["CANCELADO", "CANCELLED"].includes(order.status.toUpperCase())) {
+  throw { status: 400, message: "No se puede crear un tracking para una orden cancelada" };
+}
+
+  if (tracking.is_active === undefined || tracking.is_active === null) {
+    tracking.is_active = 1;   // ← ⚡ AQUÍ VA ESTA LÍNEA
+  }
+
+    // 2️⃣ Validar existencia previa
     const existsByOrder = await this.trackingRepository.findByOrderId(tracking.order_id);
     if (existsByOrder) throw { status: 409, message: "Ya existe un tracking para esta orden" };
 
     const existsByNumber = await this.trackingRepository.findByTrackingNumber(tracking.tracking_number);
     if (existsByNumber) throw { status: 409, message: "El número de tracking ya existe" };
 
+  
+    // 3️⃣ Crear tracking
     const id = await this.trackingRepository.create(tracking);
-    return await this.trackingRepository.findById(id);
+    const created = await this.trackingRepository.findById(id);
+
+    // 🩶 Aquí aseguramos que existe el registro
+  if (!created) throw { status: 500, message: "Error interno: el tracking recién creado no se encontró" };
+
+    // 4️⃣ Registrar notificación (solo lo comunica, no lo hace directamente)
+    return { created, orderUserId: order.user_id };
   }
 
+  
   async getAllTrackings() {
     return await this.trackingRepository.findAll();
   }
@@ -57,82 +80,90 @@ export class TrackingService {
     await this.trackingRepository.delete(id);
   }
 
-  async updateTrackingStatus(id: number, status: Tracking['status'], location: string, notes?: string) {
-    const tracking = await this.trackingRepository.findById(id);
-    if (!tracking) throw { status: 404, message: "Tracking no encontrado" };
+  async updateTrackingStatus(
+  id: number,
+  newStatus: string,
+  location?: string,
+  notes?: string
+) {
+  // 🔍 Buscar tracking
+  const tracking = await this.trackingRepository.findById(id);
+  if (!tracking) {
+    throw { status: 404, message: "Tracking no encontrado" };
+  }
 
-    // Validar duración máxima en estado PREPARING
-    if (tracking.status === 'preparing') {
-      const createdAt = new Date(tracking.created_at!);
-      const now = new Date();
-      const diffDays = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-      if (diffDays > 2) {
-        throw { status: 400, message: "La orden no puede permanecer en estado PREPARANDO más de 2 días" };
-      }
+  // ⚙️ Validar estados válidos
+  const validStates = [
+    "pending",
+    "preparing",
+    "in_transit",
+    "out_for_delivery",
+    "delivered",
+    "cancelled",
+  ];
+  if (!validStates.includes(newStatus.toLowerCase())) {
+    throw { status: 400, message: `Estado inválido: ${newStatus}` };
+  }
+
+  // 🧩 Cancelación: solo si está pendiente
+  if (["cancelado", "cancelled"].includes(newStatus.toLowerCase())) {
+    if (tracking.status === "pending") {
+      await this.trackingRepository.update(id, {
+        status: "cancelled",
+        is_active: 0,
+        updated_at: new Date(),
+      });
+      return await this.trackingRepository.findById(id);
+    } else {
+      throw {
+        status: 400,
+        message: "No se puede cancelar un tracking en estado avanzado",
+      };
     }
+  }
 
-    if (!this.isValidStatusTransition(tracking.status, status)) {
-      throw { status: 400, message: `Transición de estado inválida: de ${tracking.status} a ${status}` };
-    }
-
-    // Actualizar tracking
-    const updatedTracking = await this.trackingRepository.updateStatus(id, status, location, notes);
-
-    // Obtener user_id desde la orden asociada con tipado correcto
-      type OrderRow = RowDataPacket & { user_id: number };
-      const [orderRows] = await db.query<OrderRow[]>(`SELECT user_id FROM orders WHERE id = ?`, [tracking.order_id]);
-      const userId = orderRows[0]?.user_id;
-
-    // Crear notificación
-    const notification: TrackingNotification = {
-      tracking_id: id,
-      order_id: tracking.order_id,
-      tracking_number: tracking.tracking_number,
-      status,
-      message: this.getStatusMessage(status, location),
-      timestamp: new Date(),
+  // 🚫 Evitar retroceder estados
+  const order = [
+    "pending",
+    "preparing",
+    "in_transit",
+    "out_for_delivery",
+    "delivered",
+  ];
+  const currentIndex = order.indexOf(tracking.status);
+  const newIndex = order.indexOf(newStatus);
+  if (newIndex < currentIndex) {
+    throw {
+      status: 400,
+      message: `No se puede retroceder de ${tracking.status} a ${newStatus}`,
     };
-
-    // Insertar notificación en la base de datos
-  await db.query(`
-    INSERT INTO notifications (user_id, order_id, type, channel, message, status)
-    VALUES (?, ?, 'SHIPMENT', 'WEB', ?, 'SENT')
-  `, [userId, tracking.order_id, notification.message]);
-
-  // Sincronizar estado de la orden si el tracking fue entregado
-  if (status === 'delivered') {
-    await db.query(`UPDATE orders SET status = 'delivered', updated_at = CURRENT_TIMESTAMP WHERE id = ?`, [tracking.order_id]);
   }
 
-  // Emitir eventos WebSocket desde el servicio (si el socket esté disponible)
-  const io = (globalThis as any).io; // Asegúrate de que el socket esté accesible globalmente
-  if (io) {
-    io.to(`order_${tracking.order_id}`).emit('order_tracking_update', {
-      tracking: updatedTracking,
-      notification
-    });
-
-    if (status === 'delivered') {
-      io.to(`order_${tracking.order_id}`).emit('order_delivered', {
-        orderId: tracking.order_id,
-        trackingId: tracking.id,
-        message: 'La orden ha sido entregada',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    if (status === 'cancelled') {
-      io.to(`order_${tracking.order_id}`).emit('order_cancelled', {
-        orderId: tracking.order_id,
-        trackingId: tracking.id,
-        message: 'La orden ha sido cancelada',
-        timestamp: new Date().toISOString()
-      });
-    }
+  // 🚫 Bloquear modificaciones si ya fue entregado
+  if (tracking.status === "delivered") {
+    throw {
+      status: 400,
+      message: "El tracking ya fue entregado y no puede modificarse",
+    };
   }
 
-  return { tracking: updatedTracking, notification };
-}  
+ // ✅ Actualizar tracking sin tocar campos obligatorios
+
+const updateData: Partial<Tracking> = {
+  status: newStatus as Tracking["status"],
+  current_location: location ?? tracking.current_location,
+  notes: (notes ?? tracking.notes) as string, // fuerza string
+  updated_at: new Date(),
+};
+
+
+await this.trackingRepository.update(id, updateData);
+
+
+  // Retornar actualizado
+  return await this.trackingRepository.findById(id);
+}
+ 
 
   async getActiveTrackings() {
     return await this.trackingRepository.getActiveTrackings();
@@ -154,6 +185,7 @@ export class TrackingService {
     return trackingNumber;
   }
 
+ 
   private isValidStatusTransition(currentStatus: Tracking['status'], newStatus: Tracking['status']): boolean {
     const validTransitions: Record<Tracking['status'], Tracking['status'][]> = {
       'pending': ['preparing', 'cancelled'],
@@ -166,6 +198,7 @@ export class TrackingService {
     };
     return validTransitions[currentStatus]?.includes(newStatus) || false;
   }
+
 
   private getStatusMessage(status: Tracking['status'], location: string): string {
     const messages: Record<Tracking['status'], string> = {

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { TrackingService } from "../../application/tracking.service";
 import { TrackingRepository } from "../repositories/tracking.repository";
 import { Tracking } from "../../domain/tracking.entity";
+import db from "../../../config/db";
 
 let trackingService = new TrackingService(new TrackingRepository());
 
@@ -19,33 +20,54 @@ type TrackingResponse = Tracking & {
   updated_at_formatted: string;
 };
 
-// Crear tracking
 export const createTracking = async (req: Request, res: Response) => {
   try {
     const payload = req.body;
-    payload.is_active = payload.is_active === true || payload.is_active === "true" || payload.is_active === 1 ? 1 : 0;
+    payload.is_active = Number(payload.is_active) === 1 ? 1 : 0;
 
+    // Generar número de tracking si no se envía
     if (!payload.tracking_number) {
       payload.tracking_number = await trackingService.generateTrackingNumber();
     }
 
-    if (!payload.estimated_delivery_date) {
-      payload.estimated_delivery_date = trackingService.calculateEstimatedDeliveryDate(
-        payload.carrier_name,
-        payload.current_location,
-        payload.destination_location || payload.current_location
-      );
+    // Crear tracking (sin notificación todavía)
+    const { created, orderUserId } = await trackingService.createTracking(payload);
+
+    // 🧠 Crear notificación y obtener su ID
+    const message = `Se ha creado un nuevo tracking (${created.tracking_number}) para tu pedido #${created.order_id}`;
+    const [notificationResult]: any = await db.query(
+      `INSERT INTO notifications (user_id, order_id, type, channel, message, status)
+       VALUES (?, ?, 'SHIPMENT', 'WEB', ?, 'SENT')`,
+      [orderUserId, created.order_id, message]
+    );
+    const notificationId = notificationResult.insertId;
+
+    // 🧩 Actualizar el tracking con el ID de la notificación
+    await db.query(
+      `UPDATE trackings SET id_notificaciones = ? WHERE id = ?`,
+      [notificationId, created.id]
+    );
+
+    // 📡 Emitir evento WebSocket
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`order_${created.order_id}`).emit("order_tracking_created", {
+        tracking: { ...created, notification_id: notificationId },
+        message,
+        timestamp: new Date().toISOString(),
+      });
     }
 
-    payload.user_id = (req as any).user?.id; // Asignar el usuario propietario
+    // ✅ Responder al cliente
+    res.status(201).json({
+      message: "Tracking creado con éxito",
+      tracking: { ...created, notification_id: notificationId }
+    });
 
-    const result = await trackingService.createTracking(payload);
-    if (!result) return res.status(400).json({ message: "No se pudo crear el tracking" });
-
-    const response = formatTrackingResponse(result);
-    res.status(201).json({ message: "Tracking creado con éxito", tracking: response });
   } catch (error: any) {
-    res.status(error.status || 500).json({ message: error.message || "Error al crear tracking" });
+    res.status(error.status || 500).json({
+      message: error.message || "Error al crear tracking"
+    });
   }
 };
 
@@ -109,27 +131,109 @@ export const getTrackingByOrder = async (req: Request, res: Response) => {
   }
 };
 
-// Actualizar estado del tracking
 export const updateTrackingStatus = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.tracking_id || req.params.id);
-    if (isNaN(id)) return res.status(400).json({ message: "ID de tracking inválido o faltante" });
-
-    const { status, location, notes } = req.body;
-    const result = await trackingService.updateTrackingStatus(id, status, location, notes);
-    const response = formatTrackingResponse(result.tracking);
-
-    // Emitir notificación por WebSocket
-    if (req.app.get('io')) {
-      const io = req.app.get('io');
-      io.emit('tracking_update', { tracking: response, notification: result.notification });
-      io.to(`tracking_${id}`).emit('tracking_status_update', { tracking: response, notification: result.notification });
-      io.to(`order_${result.tracking.order_id}`).emit('order_tracking_update', { tracking: response, notification: result.notification });
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "ID de tracking inválido o faltante" });
     }
 
-    res.status(200).json({ message: "Estado actualizado con éxito", tracking: response, notification: result.notification });
+    const { status, location, notes } = req.body;
+
+    // 🔍 Buscar tracking
+    const tracking = await trackingService.getTrackingById(id);
+    if (!tracking) {
+      return res.status(404).json({ message: "Tracking no encontrado" });
+    }
+
+    // 🧩 Lógica: cancelación solo si está pendiente
+    if (["CANCELADO", "CANCELLED"].includes(status.toUpperCase())) {
+      if (tracking.status === "pending") {
+        const cancelledTracking = await trackingService.updateTrackingStatus(id, "cancelled", location, notes);
+
+        // 🧠 Crear notificación de cancelación
+        const message = `Tu pedido #${tracking.order_id} ha sido cancelado mientras estaba pendiente.`;
+        const [notif]: any = await db.query(
+          `INSERT INTO notifications (user_id, order_id, type, channel, message, status)
+           VALUES (?, ?, 'SHIPMENT', 'WEB', ?, 'SENT')`,
+          [tracking.user_id, tracking.order_id, message]
+        );
+
+        const notificationId = notif.insertId;
+
+        // Asociar notificación y marcar como inactivo
+        await db.query(
+          `UPDATE trackings SET notification_id = ?, is_active = 0 WHERE id = ?`,
+          [notificationId, id]
+        );
+
+        // Emitir evento por WebSocket
+        const io = req.app.get("io");
+        if (io) {
+          io.to(`order_${tracking.order_id}`).emit("order_tracking_cancelled", {
+            tracking_id: id,
+            order_id: tracking.order_id,
+            message,
+            timestamp: new Date().toISOString(),
+          });
+        }
+
+        return res.status(200).json({
+          message: "Tracking cancelado con éxito",
+          tracking: { ...cancelledTracking, notification_id: notificationId },
+        });
+      } else {
+        return res.status(400).json({
+          message: "No se puede cancelar un tracking en estado avanzado",
+        });
+      }
+    }
+
+    // ✅ Cambio normal de estado
+    const updatedTracking = await trackingService.updateTrackingStatus(id, status, location, notes);
+if (!updatedTracking) {
+  return res.status(500).json({ message: "No se pudo actualizar el tracking" });
+}
+
+const response = formatTrackingResponse(updatedTracking);
+    
+const [orderRows]: any = await db.query(
+  `SELECT user_id FROM orders WHERE id = ?`,
+  [updatedTracking.order_id]
+);
+const userId = orderRows[0]?.user_id;
+
+if (!userId) {
+  throw { status: 500, message: "No se encontró el user_id de la orden" };
+}
+
+    // Crear notificación del cambio
+    const message = `El estado de tu pedido #${updatedTracking.order_id} cambió a ${status.toUpperCase()}`;
+    const [notif]: any = await db.query(
+      `INSERT INTO notifications (user_id, order_id, type, channel, message, status)
+       VALUES (?, ?, 'SHIPMENT', 'WEB', ?, 'SENT')`,
+      [updatedTracking.user_id, updatedTracking.order_id, message]
+    );
+
+    const notificationId = notif.insertId;
+    await db.query(`UPDATE trackings SET notification_id = ? WHERE id = ?`, [notificationId, id]);
+
+    // Emitir eventos WebSocket
+    const io = req.app.get("io");
+    if (io) {
+      io.emit("tracking_update", { tracking: response });
+      io.to(`tracking_${id}`).emit("tracking_status_update", { tracking: response });
+      io.to(`order_${updatedTracking.order_id}`).emit("order_tracking_update", { tracking: response });
+    }
+
+    res.status(200).json({
+      message: "Estado actualizado con éxito",
+      tracking: { ...response, notification_id: notificationId },
+    });
   } catch (error: any) {
-    res.status(error.status || 500).json({ message: error.message || "Error al actualizar estado" });
+    res.status(error.status || 500).json({
+      message: error.message || "Error al actualizar estado del tracking",
+    });
   }
 };
 
@@ -150,6 +254,8 @@ export const getTrackingsByStatus = async (req: Request, res: Response) => {
     res.status(error.status || 500).json({ message: error.message || "Error al obtener trackings por estado" });
   }
 };
+
+
 
 // Listar todos los trackings (con soporte básico de paginación)
 export const getTrackings = async (req: Request, res: Response) => {
