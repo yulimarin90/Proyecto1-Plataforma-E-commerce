@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/95</span>
+                <span class='fraction'>0/96</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/81</span>
+                <span class='fraction'>0/82</span>
             </div>
         
             
@@ -240,9 +240,7 @@
 <a name='L175'></a><a href='#L175'>175</a>
 <a name='L176'></a><a href='#L176'>176</a>
 <a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a>
-<a name='L179'></a><a href='#L179'>179</a>
-<a name='L180'></a><a href='#L180'>180</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L178'></a><a href='#L178'>178</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -255,8 +253,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -320,7 +321,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -351,8 +351,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -408,8 +406,6 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -431,6 +427,9 @@ const trackingService = <span class="cstat-no" title="statement not covered" >ne
 export interface TrackingRequest extends Request {
   tracking?: any;
 }
+&nbsp;
+// Estados válidos según reglas de negocio
+const validStatuses = <span class="cstat-no" title="statement not covered" >['pending', 'preparing', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'];</span>
 &nbsp;
 // Middleware principal para validar que el tracking exista
 export const <span class="cstat-no" title="statement not covered" >trackingExistsMiddleware = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >a</span>sync </span>(req: TrackingRequest, res: Response, next: NextFunction) =&gt; {</span>
@@ -476,9 +475,9 @@ export const <span class="cstat-no" title="statement not covered" >validateCreat
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ message: "Número de tracking inválido o requerido (mínimo 3 caracteres)" });</span>
   }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (!status || !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status)) {</span>
+<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (!status || !validStatuses.includes(status)) {</span>
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ </span>
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
+      message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` 
     });
   }
 &nbsp;
@@ -497,10 +496,9 @@ export const <span class="cstat-no" title="statement not covered" >validateCreat
 export const <span class="cstat-no" title="statement not covered" >validateUpdateTracking = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>r</span>eq: Request, res: Response, next: NextFunction) =&gt; {</span>
   const { status, current_location, carrier_name } = <span class="cstat-no" title="statement not covered" >req.body;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (status &amp;&amp; !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status)) {</span>
+<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (status &amp;&amp; !validStatuses.includes(status)) {</span>
 <span class="cstat-no" title="statement not covered" >    return res.status(400).json({ </span>
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
-    });
+      message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` });
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (current_location &amp;&amp; current_location.trim().length &lt; 2) {</span>
@@ -526,10 +524,8 @@ export const <span class="cstat-no" title="statement not covered" >validateUpdat
 export const <span class="cstat-no" title="statement not covered" >validateUpdateStatus = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>r</span>eq: Request, res: Response, next: NextFunction) =&gt; {</span>
   const { status, location } = <span class="cstat-no" title="statement not covered" >req.body;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (!status || !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status)) {</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(400).json({ </span>
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
-    });
+<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (!status || !validStatuses.includes(status)) {</span>
+<span class="cstat-no" title="statement not covered" >    return res.status(400).json({ message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` });</span>
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (!location || location.trim().length &lt; 2) {</span>
@@ -585,10 +581,8 @@ export const <span class="cstat-no" title="statement not covered" >validateDelet
 export const <span class="cstat-no" title="statement not covered" >validateQueryParams = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(</span>r</span>eq: Request, res: Response, next: NextFunction) =&gt; {</span>
   const { status, page, limit } = <span class="cstat-no" title="statement not covered" >req.query;</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (status &amp;&amp; !['pending', 'in_transit', 'out_for_delivery', 'delivered', 'cancelled', 'returned'].includes(status as string)) {</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(400).json({ </span>
-      message: "Estado inválido. Estados válidos: pending, in_transit, out_for_delivery, delivered, cancelled, returned" 
-    });
+<span class="cstat-no" title="statement not covered" >   <span class="missing-if-branch" title="if path not taken" >I</span>if (status &amp;&amp; !validStatuses.includes(status as string)) {</span>
+<span class="cstat-no" title="statement not covered" >    return res.status(400).json({ message: `Estado inválido. Estados válidos: ${validStatuses.join(', ')}` });</span>
   }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (page &amp;&amp; (isNaN(Number(page)) || Number(page) &lt; 1)) {</span>
@@ -607,7 +601,7 @@ export const <span class="cstat-no" title="statement not covered" >validateQuery
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-18T00:18:34.038Z
+                at 2025-10-22T22:21:21.123Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>
