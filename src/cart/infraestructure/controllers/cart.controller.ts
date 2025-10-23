@@ -11,7 +11,7 @@ export const setCartService = (svc: any) => (cartService = svc);
 export const setProductsRepository = (repo: any) => (productRepository = repo);
 
 export class CartController {
-  /** 🧭 Obtener ID de usuario desde header, body o token */
+  /** Obtener ID de usuario desde header, body o token */
   private getUserId(req: Request): number {
     const headerId = req.headers["x-user-id"];
     const bodyId = req.body?.user_id ?? req.body?.userId;
@@ -22,7 +22,7 @@ export class CartController {
     return Number(val);
   }
 
-  /** 📦 Obtener carrito activo */
+  /** Obtener carrito activo */
   async viewCart(req: Request, res: Response) {
     try {
       const userId = this.getUserId(req);
@@ -50,7 +50,7 @@ export class CartController {
       const product = await productRepository.findById(Number(productId));
       if (!product) return res.status(404).json({ error: "Producto no encontrado" });
 
-      // 🚫 No permitir agregar productos inactivos o descontinuados
+      // No permitir agregar productos inactivos o descontinuados
       if (!product.is_active || product.is_discontinued) {
         return res.status(400).json({ error: "Producto inactivo o descontinuado" });
       }
@@ -59,10 +59,10 @@ export class CartController {
         return res.status(400).json({ error: "Cantidad supera el stock disponible" });
       }
 
-      // ✅ Obtener carrito activo o crear uno nuevo si expiró
+      // Obtener carrito activo o crear uno nuevo si expiró
       const cart = await cartService.getCart(userId);
 
-      // 🆕 Datos del producto
+      // Datos del producto
       const productData = {
         product_id: product.id!,
         name: product.name,
@@ -85,7 +85,7 @@ export class CartController {
     }
   }
 
-  /** 🔄 Actualizar cantidad de un producto */
+  /** Actualizar cantidad de un producto */
   async updateQuantity(req: Request, res: Response) {
     try {
       const userId = this.getUserId(req);
@@ -115,7 +115,7 @@ export class CartController {
     }
   }
 
-  /** 🗑️ Eliminar un producto del carrito */
+  /** Eliminar un producto del carrito */
   async removeItem(req: Request, res: Response) {
     try {
       const userId = this.getUserId(req);
@@ -132,7 +132,7 @@ export class CartController {
     }
   }
 
-  /** 🧹 Vaciar carrito */
+  /** Vaciar carrito */
   async clearCart(req: Request, res: Response) {
     try {
       const userId = this.getUserId(req);
@@ -146,7 +146,7 @@ export class CartController {
     }
   }
 
-  /** 🧾 Checkout del carrito */
+  /** Checkout del carrito */
   async checkout(req: Request, res: Response) {
     try {
       const userId = this.getUserId(req);

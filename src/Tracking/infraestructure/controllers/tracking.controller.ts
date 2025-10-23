@@ -33,7 +33,7 @@ export const createTracking = async (req: Request, res: Response) => {
     // Crear tracking (sin notificación todavía)
     const { created, orderUserId } = await trackingService.createTracking(payload);
 
-    // 🧠 Crear notificación y obtener su ID
+    // Crear notificación y obtener su ID
     const message = `Se ha creado un nuevo tracking (${created.tracking_number}) para tu pedido #${created.order_id}`;
     const [notificationResult]: any = await db.query(
       `INSERT INTO notifications (user_id, order_id, type, channel, message, status)
@@ -42,13 +42,13 @@ export const createTracking = async (req: Request, res: Response) => {
     );
     const notificationId = notificationResult.insertId;
 
-    // 🧩 Actualizar el tracking con el ID de la notificación
+    // Actualizar el tracking con el ID de la notificación
     await db.query(
       `UPDATE trackings SET id_notificaciones = ? WHERE id = ?`,
       [notificationId, created.id]
     );
 
-    // 📡 Emitir evento WebSocket
+    // Emitir evento WebSocket
     const io = req.app.get("io");
     if (io) {
       io.to(`order_${created.order_id}`).emit("order_tracking_created", {
@@ -58,7 +58,7 @@ export const createTracking = async (req: Request, res: Response) => {
       });
     }
 
-    // ✅ Responder al cliente
+    // Responder al cliente
     res.status(201).json({
       message: "Tracking creado con éxito",
       tracking: { ...created, notification_id: notificationId }
@@ -140,18 +140,18 @@ export const updateTrackingStatus = async (req: Request, res: Response) => {
 
     const { status, location, notes } = req.body;
 
-    // 🔍 Buscar tracking
+    // Buscar tracking
     const tracking = await trackingService.getTrackingById(id);
     if (!tracking) {
       return res.status(404).json({ message: "Tracking no encontrado" });
     }
 
-    // 🧩 Lógica: cancelación solo si está pendiente
+    // Lógica: cancelación solo si está pendiente
     if (["CANCELADO", "CANCELLED"].includes(status.toUpperCase())) {
       if (tracking.status === "pending") {
         const cancelledTracking = await trackingService.updateTrackingStatus(id, "cancelled", location, notes);
 
-        // 🧠 Crear notificación de cancelación
+        // Crear notificación de cancelación
         const message = `Tu pedido #${tracking.order_id} ha sido cancelado mientras estaba pendiente.`;
         const [notif]: any = await db.query(
           `INSERT INTO notifications (user_id, order_id, type, channel, message, status)
@@ -189,7 +189,7 @@ export const updateTrackingStatus = async (req: Request, res: Response) => {
       }
     }
 
-    // ✅ Cambio normal de estado
+    // Cambio normal de estado
     const updatedTracking = await trackingService.updateTrackingStatus(id, status, location, notes);
 if (!updatedTracking) {
   return res.status(500).json({ message: "No se pudo actualizar el tracking" });

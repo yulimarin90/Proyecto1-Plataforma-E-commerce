@@ -7,7 +7,7 @@ export class TrackingService {
   constructor(private trackingRepository: ITrackingRepository) {}
 
   async createTracking(tracking: Tracking) {
-    // 1️⃣ Validar orden
+    // Validar orden
     type OrderRow = RowDataPacket & { id: number; status: string; user_id: number };
     const [orderRows] = await db.query<OrderRow[]>(`SELECT id, status, user_id FROM orders WHERE id = ?`, [tracking.order_id]);
     const order = orderRows[0];
@@ -17,10 +17,10 @@ export class TrackingService {
 }
 
   if (tracking.is_active === undefined || tracking.is_active === null) {
-    tracking.is_active = 1;   // ← ⚡ AQUÍ VA ESTA LÍNEA
+    tracking.is_active = 1;  
   }
 
-    // 2️⃣ Validar existencia previa
+    // Validar existencia previa
     const existsByOrder = await this.trackingRepository.findByOrderId(tracking.order_id);
     if (existsByOrder) throw { status: 409, message: "Ya existe un tracking para esta orden" };
 
@@ -28,14 +28,14 @@ export class TrackingService {
     if (existsByNumber) throw { status: 409, message: "El número de tracking ya existe" };
 
   
-    // 3️⃣ Crear tracking
+    // Crear tracking
     const id = await this.trackingRepository.create(tracking);
     const created = await this.trackingRepository.findById(id);
 
     // 🩶 Aquí aseguramos que existe el registro
   if (!created) throw { status: 500, message: "Error interno: el tracking recién creado no se encontró" };
 
-    // 4️⃣ Registrar notificación (solo lo comunica, no lo hace directamente)
+    // Registrar notificación (solo lo comunica, no lo hace directamente)
     return { created, orderUserId: order.user_id };
   }
 
@@ -92,7 +92,7 @@ export class TrackingService {
     throw { status: 404, message: "Tracking no encontrado" };
   }
 
-  // ⚙️ Validar estados válidos
+  // Validar estados válidos
   const validStates = [
     "pending",
     "preparing",
@@ -105,7 +105,7 @@ export class TrackingService {
     throw { status: 400, message: `Estado inválido: ${newStatus}` };
   }
 
-  // 🧩 Cancelación: solo si está pendiente
+  // Cancelación: solo si está pendiente
   if (["cancelado", "cancelled"].includes(newStatus.toLowerCase())) {
     if (tracking.status === "pending") {
       await this.trackingRepository.update(id, {
@@ -122,7 +122,7 @@ export class TrackingService {
     }
   }
 
-  // 🚫 Evitar retroceder estados
+  // Evitar retroceder estados
   const order = [
     "pending",
     "preparing",
@@ -139,7 +139,7 @@ export class TrackingService {
     };
   }
 
-  // 🚫 Bloquear modificaciones si ya fue entregado
+  // Bloquear modificaciones si ya fue entregado
   if (tracking.status === "delivered") {
     throw {
       status: 400,
@@ -147,7 +147,7 @@ export class TrackingService {
     };
   }
 
- // ✅ Actualizar tracking sin tocar campos obligatorios
+ // Actualizar tracking sin tocar campos obligatorios
 
 const updateData: Partial<Tracking> = {
   status: newStatus as Tracking["status"],

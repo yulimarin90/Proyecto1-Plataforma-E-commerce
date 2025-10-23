@@ -7,13 +7,13 @@ import { IProductsRepository } from "../../../Products/infraestructure/repositor
 export class CartRepository implements ICartRepository {
   constructor(private productsRepository: IProductsRepository) {}
 
-  // ✅ Buscar producto por ID
+  // Buscar producto por ID
   async findProductById(productId: number) {
     const [rows]: any = await db.query("SELECT * FROM products WHERE id = ?", [productId]);
     return rows[0] || null;
   }
 
-  // ✅ Validar si producto está activo y con stock
+  // Validar si producto está activo y con stock
   async validateProductAvailability(productId: number) {
     const product = await this.findProductById(productId);
     if (!product) throw new Error("Producto no encontrado");
@@ -62,7 +62,7 @@ export class CartRepository implements ICartRepository {
     return rows[0] || null;
   }
 
-  // ✅ Agregar o actualizar un ítem del carrito
+  // Agregar o actualizar un ítem del carrito
   async upsertItem(cartId: number, productId: number, quantity: number, price: number): Promise<void> {
     const product = await this.validateProductAvailability(productId); // 🔍 Validación agregada
 
@@ -126,10 +126,10 @@ export class CartRepository implements ICartRepository {
     };
   }
 
-  // ✅ Crear o actualizar carrito
+  // Crear o actualizar carrito
   async save(cart: Cart): Promise<Cart> {
     if (!cart.id) {
-      // 🆕 Crear carrito nuevo
+      // Crear carrito nuevo
       const [result]: any = await db.query<ResultSetHeader>(
         `INSERT INTO carts (user_id, total_amount, created_at, updated_at, expires_at, status)
          VALUES (?, ?, NOW(), NOW(), ?, ?)`,
@@ -137,7 +137,7 @@ export class CartRepository implements ICartRepository {
       );
       cart.id = result.insertId;
     } else {
-      // 🔁 Actualizar carrito existente
+      // Actualizar carrito existente
       await db.query<ResultSetHeader>(
         `UPDATE carts
          SET total_amount = ?, updated_at = NOW(), expires_at = ?, status = ?
@@ -146,10 +146,10 @@ export class CartRepository implements ICartRepository {
       );
     }
 
-    // 🧹 Limpiar ítems anteriores
+    // Limpiar ítems anteriores
     await db.query("DELETE FROM cart_items WHERE cart_id = ?", [cart.id]);
 
-    // 💾 Insertar los ítems nuevos
+    // Insertar los ítems nuevos
     for (const item of cart.items) {
       await db.query<ResultSetHeader>(
         `INSERT INTO cart_items (cart_id, product_id, quantity, price, subtotal, created_at, updated_at)
@@ -158,7 +158,7 @@ export class CartRepository implements ICartRepository {
       );
     }
 
-    return cart; // ✅ Retornar el carrito actualizado o creado
+    return cart; // Retornar el carrito actualizado o creado
   }
 
   async deleteCart(userId: number): Promise<void> {
